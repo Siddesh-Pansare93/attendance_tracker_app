@@ -4,6 +4,7 @@ import 'package:smart_attendance_app/core/constants/app_constants.dart';
 import 'package:smart_attendance_app/features/timetable/controller/timetable_controller.dart';
 
 /// Page for adding or editing a timetable entry
+/// Simplified to just select subject and day - no timing or type needed
 class AddTimetableEntryPage extends StatefulWidget {
   final bool isEdit;
 
@@ -18,9 +19,6 @@ class _AddTimetableEntryPageState extends State<AddTimetableEntryPage> {
 
   String? _selectedSubjectId;
   int _selectedDay = 1; // Monday
-  TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
-  TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
-  String _selectedType = 'Lecture';
 
   late String? _editId;
   bool _isLoading = false;
@@ -45,20 +43,8 @@ class _AddTimetableEntryPageState extends State<AddTimetableEntryPage> {
       setState(() {
         _selectedSubjectId = entry.subjectId;
         _selectedDay = entry.dayOfWeek;
-        _startTime = _parseTime(entry.startTime);
-        _endTime = _parseTime(entry.endTime);
-        _selectedType = entry.type;
       });
     }
-  }
-
-  TimeOfDay _parseTime(String time) {
-    final parts = time.split(':');
-    return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
-  }
-
-  String _formatTime(TimeOfDay time) {
-    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -145,46 +131,6 @@ class _AddTimetableEntryPageState extends State<AddTimetableEntryPage> {
                   if (value != null) setState(() => _selectedDay = value);
                 },
               ),
-              const SizedBox(height: 16),
-
-              // Time row
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTimePicker(
-                      context,
-                      'Start Time',
-                      _startTime,
-                      (time) => setState(() => _startTime = time),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildTimePicker(
-                      context,
-                      'End Time',
-                      _endTime,
-                      (time) => setState(() => _endTime = time),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Class type
-              DropdownButtonFormField<String>(
-                initialValue: _selectedType,
-                decoration: const InputDecoration(
-                  labelText: 'Class Type',
-                  prefixIcon: Icon(Icons.category),
-                ),
-                items: kClassTypes.map((type) {
-                  return DropdownMenuItem(value: type, child: Text(type));
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) setState(() => _selectedType = value);
-                },
-              ),
               const SizedBox(height: 32),
 
               // Save button
@@ -198,7 +144,7 @@ class _AddTimetableEntryPageState extends State<AddTimetableEntryPage> {
                           height: 24,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Text(widget.isEdit ? 'Save Changes' : 'Add Entry'),
+                      : Text(widget.isEdit ? 'Save Changes' : 'Add Class'),
                 ),
               ),
             ],
@@ -208,49 +154,8 @@ class _AddTimetableEntryPageState extends State<AddTimetableEntryPage> {
     );
   }
 
-  Widget _buildTimePicker(
-    BuildContext context,
-    String label,
-    TimeOfDay time,
-    ValueChanged<TimeOfDay> onChanged,
-  ) {
-    final theme = Theme.of(context);
-
-    return InkWell(
-      onTap: () async {
-        final picked = await showTimePicker(
-          context: context,
-          initialTime: time,
-        );
-        if (picked != null) {
-          onChanged(picked);
-        }
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: const Icon(Icons.access_time),
-        ),
-        child: Text(time.format(context), style: theme.textTheme.bodyLarge),
-      ),
-    );
-  }
-
   Future<void> _saveEntry() async {
     if (!_formKey.currentState!.validate()) return;
-
-    // Validate times
-    final startMinutes = _startTime.hour * 60 + _startTime.minute;
-    final endMinutes = _endTime.hour * 60 + _endTime.minute;
-    if (endMinutes <= startMinutes) {
-      Get.snackbar(
-        'Invalid Time',
-        'End time must be after start time',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return;
-    }
 
     setState(() => _isLoading = true);
 
@@ -258,36 +163,25 @@ class _AddTimetableEntryPageState extends State<AddTimetableEntryPage> {
       final controller = Get.find<TimetableController>();
 
       if (widget.isEdit && _editId != null) {
-        // Delete old entry and create new one with same ID
         await controller.deleteEntry(_editId!);
-        await controller.addEntry(
-          subjectId: _selectedSubjectId!,
-          dayOfWeek: _selectedDay,
-          startTime: _formatTime(_startTime),
-          endTime: _formatTime(_endTime),
-          type: _selectedType,
-        );
-      } else {
-        await controller.addEntry(
-          subjectId: _selectedSubjectId!,
-          dayOfWeek: _selectedDay,
-          startTime: _formatTime(_startTime),
-          endTime: _formatTime(_endTime),
-          type: _selectedType,
-        );
       }
+
+      await controller.addEntry(
+        subjectId: _selectedSubjectId!,
+        dayOfWeek: _selectedDay,
+      );
 
       Get.back();
       Get.snackbar(
         'Success',
-        widget.isEdit ? 'Entry updated!' : 'Entry added!',
+        widget.isEdit ? 'Class updated!' : 'Class added!',
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 2),
       );
     } catch (e) {
       Get.snackbar(
         'Error',
-        'Failed to save entry. Please try again.',
+        'Failed to save. Please try again.',
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {

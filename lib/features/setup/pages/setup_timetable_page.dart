@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_attendance_app/core/constants/app_constants.dart';
-import 'package:smart_attendance_app/core/utils/attendance_utils.dart';
 import 'package:smart_attendance_app/features/setup/controller/setup_controller.dart';
 
 /// Page for creating timetable during first-time setup
+/// Simplified - just select subject and day, no timing needed
 class SetupTimetablePage extends StatefulWidget {
   const SetupTimetablePage({super.key});
 
@@ -15,9 +15,6 @@ class SetupTimetablePage extends StatefulWidget {
 class _SetupTimetablePageState extends State<SetupTimetablePage> {
   int _selectedDay = 1; // Monday
   String? _selectedSubjectId;
-  TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
-  TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
-  String _selectedType = 'Lecture';
 
   @override
   Widget build(BuildContext context) {
@@ -41,14 +38,14 @@ class _SetupTimetablePageState extends State<SetupTimetablePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'When do you have classes?',
+                    'What classes do you have each day?',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Add your weekly schedule. You can always edit this later.',
+                    'Select a day and add which subjects you have. You can edit this later.',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
@@ -63,10 +60,15 @@ class _SetupTimetablePageState extends State<SetupTimetablePage> {
                       itemCount: 7,
                       itemBuilder: (context, index) {
                         final isSelected = _selectedDay == index;
+                        final classCount = controller.timetableEntries
+                            .where((e) => e.dayOfWeek == index)
+                            .length;
                         return Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: ChoiceChip(
-                            label: Text(kShortDayNames[index]),
+                            label: Text(
+                              '${kShortDayNames[index]}${classCount > 0 ? ' ($classCount)' : ''}',
+                            ),
                             selected: isSelected,
                             onSelected: (selected) {
                               if (selected) {
@@ -80,100 +82,41 @@ class _SetupTimetablePageState extends State<SetupTimetablePage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Add entry card
+                  // Add entry card - simplified
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          Text(
-                            'Add Class for ${kDayNames[_selectedDay]}',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Subject dropdown
-                          Obx(
-                            () => DropdownButtonFormField<String>(
-                              initialValue: _selectedSubjectId,
-                              decoration: const InputDecoration(
-                                labelText: 'Subject',
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                              ),
-                              items: controller.subjects.map((s) {
-                                return DropdownMenuItem(
-                                  value: s.id,
-                                  child: Text(s.name),
-                                );
-                              }).toList(),
-                              onChanged: (v) =>
-                                  setState(() => _selectedSubjectId = v),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Time pickers row
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildTimePicker(
-                                  'Start',
-                                  _startTime,
-                                  (t) => setState(() => _startTime = t),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _buildTimePicker(
-                                  'End',
-                                  _endTime,
-                                  (t) => setState(() => _endTime = t),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Type and add button
-                          Row(
-                            children: [
-                              Expanded(
-                                child: DropdownButtonFormField<String>(
-                                  initialValue: _selectedType,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Type',
-                                    contentPadding: EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 8,
-                                    ),
+                          Expanded(
+                            child: Obx(
+                              () => DropdownButtonFormField<String>(
+                                initialValue: _selectedSubjectId,
+                                decoration: const InputDecoration(
+                                  labelText: 'Select Subject',
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
                                   ),
-                                  items: kClassTypes.map((t) {
-                                    return DropdownMenuItem(
-                                      value: t,
-                                      child: Text(t),
-                                    );
-                                  }).toList(),
-                                  onChanged: (v) {
-                                    if (v != null) {
-                                      setState(() => _selectedType = v);
-                                    }
-                                  },
                                 ),
+                                items: controller.subjects.map((s) {
+                                  return DropdownMenuItem(
+                                    value: s.id,
+                                    child: Text(s.name),
+                                  );
+                                }).toList(),
+                                onChanged: (v) =>
+                                    setState(() => _selectedSubjectId = v),
                               ),
-                              const SizedBox(width: 12),
-                              ElevatedButton(
-                                onPressed: _selectedSubjectId == null
-                                    ? null
-                                    : () => _addEntry(controller),
-                                child: const Text('Add'),
-                              ),
-                            ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          ElevatedButton.icon(
+                            onPressed: _selectedSubjectId == null
+                                ? null
+                                : () => _addEntry(controller),
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text('Add'),
                           ),
                         ],
                       ),
@@ -182,24 +125,36 @@ class _SetupTimetablePageState extends State<SetupTimetablePage> {
                   const SizedBox(height: 16),
 
                   // Entries list for selected day
-                  Text(
-                    '${kDayNames[_selectedDay]} Classes',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        '${kDayNames[_selectedDay]} Classes',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.6,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      Obx(() {
+                        final count = controller.timetableEntries
+                            .where((e) => e.dayOfWeek == _selectedDay)
+                            .length;
+                        return Text(
+                          '$count class${count != 1 ? 'es' : ''}',
+                          style: theme.textTheme.bodySmall,
+                        );
+                      }),
+                    ],
                   ),
                   const SizedBox(height: 8),
 
                   Expanded(
                     child: Obx(() {
-                      final entries =
-                          controller.timetableEntries
-                              .where((e) => e.dayOfWeek == _selectedDay)
-                              .toList()
-                            ..sort(
-                              (a, b) => a.startTime.compareTo(b.startTime),
-                            );
+                      final entries = controller.timetableEntries
+                          .where((e) => e.dayOfWeek == _selectedDay)
+                          .toList();
 
                       if (entries.isEmpty) {
                         return Center(
@@ -222,27 +177,22 @@ class _SetupTimetablePageState extends State<SetupTimetablePage> {
                             margin: const EdgeInsets.only(bottom: 8),
                             child: ListTile(
                               leading: Container(
-                                padding: const EdgeInsets.all(8),
+                                width: 40,
+                                height: 40,
                                 decoration: BoxDecoration(
                                   color: theme.colorScheme.primary.withValues(
                                     alpha: 0.1,
                                   ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: Text(
-                                  AttendanceUtils.formatTime(entry.startTime),
-                                  style: TextStyle(
-                                    color: theme.colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
+                                child: Icon(
+                                  Icons.book,
+                                  color: theme.colorScheme.primary,
+                                  size: 20,
                                 ),
                               ),
                               title: Text(
                                 controller.getSubjectName(entry.subjectId),
-                              ),
-                              subtitle: Text(
-                                '${entry.type} • ${AttendanceUtils.formatTimeRange(entry.startTime, entry.endTime)}',
                               ),
                               trailing: IconButton(
                                 icon: const Icon(Icons.close),
@@ -308,45 +258,15 @@ class _SetupTimetablePageState extends State<SetupTimetablePage> {
     );
   }
 
-  Widget _buildTimePicker(
-    String label,
-    TimeOfDay time,
-    ValueChanged<TimeOfDay> onChanged,
-  ) {
-    return InkWell(
-      onTap: () async {
-        final picked = await showTimePicker(
-          context: context,
-          initialTime: time,
-        );
-        if (picked != null) onChanged(picked);
-      },
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 8,
-          ),
-        ),
-        child: Text(time.format(context)),
-      ),
-    );
-  }
-
-  String _formatTime(TimeOfDay time) {
-    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-  }
-
   void _addEntry(SetupController controller) {
     if (_selectedSubjectId == null) return;
 
     controller.addTimetableEntry(
       subjectId: _selectedSubjectId!,
       dayOfWeek: _selectedDay,
-      startTime: _formatTime(_startTime),
-      endTime: _formatTime(_endTime),
-      type: _selectedType,
     );
+
+    // Reset selection for quick add
+    setState(() => _selectedSubjectId = null);
   }
 }

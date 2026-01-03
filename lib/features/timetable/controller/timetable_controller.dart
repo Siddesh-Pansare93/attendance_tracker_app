@@ -39,9 +39,9 @@ class TimetableController extends GetxController {
 
   /// Filter entries for selected day
   void _filterEntriesForDay() {
-    entriesForDay.value =
-        allEntries.where((e) => e.dayOfWeek == selectedDay.value).toList()
-          ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    entriesForDay.value = allEntries
+        .where((e) => e.dayOfWeek == selectedDay.value)
+        .toList();
   }
 
   /// Get subject by ID
@@ -61,8 +61,7 @@ class TimetableController extends GetxController {
 
   /// Get entries for a specific day
   List<TimetableEntry> getEntriesForDay(int day) {
-    return allEntries.where((e) => e.dayOfWeek == day).toList()
-      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    return allEntries.where((e) => e.dayOfWeek == day).toList();
   }
 
   /// Check if a day has any classes
@@ -81,8 +80,8 @@ class TimetableController extends GetxController {
   Future<void> addEntry({
     required String subjectId,
     required int dayOfWeek,
-    required String startTime,
-    required String endTime,
+    String startTime = '09:00',
+    String endTime = '10:00',
     String type = 'Lecture',
   }) async {
     final entry = TimetableEntry(

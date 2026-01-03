@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_attendance_app/core/routes/app_routes.dart';
 import 'package:smart_attendance_app/core/constants/app_constants.dart';
-import 'package:smart_attendance_app/core/utils/attendance_utils.dart';
 import 'package:smart_attendance_app/common/widgets/empty_state.dart';
 import 'package:smart_attendance_app/features/timetable/controller/timetable_controller.dart';
 import 'package:smart_attendance_app/features/timetable/data/model/timetable_entry_model.dart';
 
-/// Page displaying weekly timetable
+/// Page displaying weekly timetable - simplified to just show subjects per day
 class TimetablePage extends StatelessWidget {
   const TimetablePage({super.key});
 
@@ -110,7 +109,9 @@ class TimetablePage extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? Colors.white.withValues(alpha: 0.2)
-                              : theme.colorScheme.primary.withValues(alpha: 0.1),
+                              : theme.colorScheme.primary.withValues(
+                                  alpha: 0.1,
+                                ),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -183,91 +184,32 @@ class TimetablePage extends StatelessWidget {
       onDismissed: (direction) => controller.deleteEntry(entry.id),
       child: Card(
         margin: const EdgeInsets.only(bottom: 12),
-        child: InkWell(
-          onTap: () => Get.toNamed('/timetable/edit/${entry.id}'),
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                // Time column
-                Container(
-                  width: 80,
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        AttendanceUtils.formatTime(entry.startTime),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: Icon(
-                          Icons.arrow_downward,
-                          size: 12,
-                          color: theme.colorScheme.primary.withValues(alpha: 0.5),
-                        ),
-                      ),
-                      Text(
-                        AttendanceUtils.formatTime(entry.endTime),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-
-                // Content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        subjectName,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.secondary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          entry.type,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: theme.colorScheme.secondary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Edit icon
-                Icon(
-                  Icons.chevron_right,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                ),
-              ],
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
+          leading: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
+            child: Icon(Icons.book, color: theme.colorScheme.primary),
+          ),
+          title: Text(
+            subjectName,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          trailing: IconButton(
+            icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+            onPressed: () async {
+              final confirm = await _confirmDelete(context);
+              if (confirm) controller.deleteEntry(entry.id);
+            },
           ),
         ),
       ),
@@ -278,9 +220,9 @@ class TimetablePage extends StatelessWidget {
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Delete Entry'),
+            title: const Text('Delete Class'),
             content: const Text(
-              'Are you sure you want to delete this timetable entry?',
+              'Are you sure you want to remove this class from the timetable?',
             ),
             actions: [
               TextButton(

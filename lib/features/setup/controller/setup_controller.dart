@@ -38,8 +38,8 @@ class SetupController extends GetxController {
   void addTimetableEntry({
     required String subjectId,
     required int dayOfWeek,
-    required String startTime,
-    required String endTime,
+    String startTime = '09:00',
+    String endTime = '10:00',
     String type = 'Lecture',
   }) {
     final entry = TimetableEntry(
