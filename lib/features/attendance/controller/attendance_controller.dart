@@ -5,6 +5,7 @@ import 'package:smart_attendance_app/core/utils/attendance_utils.dart';
 import 'package:smart_attendance_app/features/attendance/data/model/subject_model.dart';
 import 'package:smart_attendance_app/features/attendance/data/model/attendance_record_model.dart';
 import 'package:smart_attendance_app/features/timetable/data/model/timetable_entry_model.dart';
+import 'package:smart_attendance_app/features/dashboard/controller/dashboard_controller.dart';
 
 /// Controller for attendance marking and subject management
 class AttendanceController extends GetxController {
@@ -118,6 +119,11 @@ class AttendanceController extends GetxController {
 
     // Refresh subjects list
     subjects.value = _storage.getAllSubjects();
+
+    // Also refresh dashboard if it's registered
+    if (Get.isRegistered<DashboardController>()) {
+      Get.find<DashboardController>().loadData();
+    }
   }
 
   /// Load subject detail with history
@@ -152,6 +158,10 @@ class AttendanceController extends GetxController {
     if (selectedSubject.value?.id == subject.id) {
       selectedSubject.value = subject;
     }
+    // Refresh dashboard
+    if (Get.isRegistered<DashboardController>()) {
+      Get.find<DashboardController>().loadData();
+    }
   }
 
   /// Delete a subject and all related data
@@ -160,6 +170,10 @@ class AttendanceController extends GetxController {
     subjects.value = _storage.getAllSubjects();
     if (selectedSubject.value?.id == id) {
       selectedSubject.value = null;
+    }
+    // Refresh dashboard
+    if (Get.isRegistered<DashboardController>()) {
+      Get.find<DashboardController>().loadData();
     }
   }
 
@@ -186,6 +200,11 @@ class AttendanceController extends GetxController {
     final todayStr = AttendanceUtils.getTodayString();
     if (record.date == todayStr) {
       todayRecords.remove(record.subjectId);
+    }
+
+    // Refresh dashboard
+    if (Get.isRegistered<DashboardController>()) {
+      Get.find<DashboardController>().loadData();
     }
   }
 }
