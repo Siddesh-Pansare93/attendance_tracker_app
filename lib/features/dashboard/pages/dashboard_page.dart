@@ -75,7 +75,7 @@ class DashboardPage extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.8)],
+          colors: [colorScheme.primary, colorScheme.primary.withValues(alpha: 0.8)],
         ),
       ),
       child: SafeArea(
@@ -102,7 +102,7 @@ class DashboardPage extends StatelessWidget {
                     Text(
                       'Overall Attendance',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -159,7 +159,7 @@ class DashboardPage extends StatelessWidget {
         ),
         Text(
           label,
-          style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.7)),
+          style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.7)),
         ),
       ],
     );
@@ -279,7 +279,7 @@ class DashboardPage extends StatelessWidget {
                     entry.endTime,
                   ),
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
                 Container(
@@ -288,7 +288,7 @@ class DashboardPage extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.1),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -402,7 +402,7 @@ class DashboardPage extends StatelessWidget {
                     Text(
                       '${subject.attendedClasses} / ${subject.totalClasses} classes',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                     const SizedBox(height: 4),

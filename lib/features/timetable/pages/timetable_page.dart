@@ -109,8 +109,8 @@ class TimetablePage extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? Colors.white.withOpacity(0.2)
-                              : theme.colorScheme.primary.withOpacity(0.1),
+                              ? Colors.white.withValues(alpha: 0.2)
+                              : theme.colorScheme.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -195,7 +195,7 @@ class TimetablePage extends StatelessWidget {
                   width: 80,
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.1),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
@@ -212,7 +212,7 @@ class TimetablePage extends StatelessWidget {
                         child: Icon(
                           Icons.arrow_downward,
                           size: 12,
-                          color: theme.colorScheme.primary.withOpacity(0.5),
+                          color: theme.colorScheme.primary.withValues(alpha: 0.5),
                         ),
                       ),
                       Text(
@@ -245,7 +245,7 @@ class TimetablePage extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.secondary.withOpacity(0.1),
+                          color: theme.colorScheme.secondary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -264,7 +264,7 @@ class TimetablePage extends StatelessWidget {
                 // Edit icon
                 Icon(
                   Icons.chevron_right,
-                  color: theme.colorScheme.onSurface.withOpacity(0.4),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                 ),
               ],
             ),

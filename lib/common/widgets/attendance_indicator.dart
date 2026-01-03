@@ -34,8 +34,8 @@ class AttendanceIndicator extends StatelessWidget {
             child: CircularProgressIndicator(
               value: 1,
               strokeWidth: size * 0.1,
-              backgroundColor: color.withOpacity(0.2),
-              valueColor: AlwaysStoppedAnimation(color.withOpacity(0.2)),
+              backgroundColor: color.withValues(alpha: 0.2),
+              valueColor: AlwaysStoppedAnimation(color.withValues(alpha: 0.2)),
             ),
           ),
           // Progress circle
@@ -98,7 +98,7 @@ class AttendanceBar extends StatelessWidget {
     return Container(
       height: height,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(height / 2),
       ),
       child: FractionallySizedBox(
@@ -134,9 +134,9 @@ class StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

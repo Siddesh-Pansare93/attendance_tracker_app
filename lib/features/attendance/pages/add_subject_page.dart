@@ -117,7 +117,7 @@ class _AddSubjectPageState extends State<AddSubjectPage> {
                       child: Text(
                         'The app will alert you when your attendance falls below the minimum required percentage.',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
                       ),
                     ),

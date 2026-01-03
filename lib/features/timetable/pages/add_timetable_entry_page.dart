@@ -108,7 +108,7 @@ class _AddTimetableEntryPageState extends State<AddTimetableEntryPage> {
             children: [
               // Subject dropdown
               DropdownButtonFormField<String>(
-                value: _selectedSubjectId,
+                initialValue: _selectedSubjectId,
                 decoration: const InputDecoration(
                   labelText: 'Subject',
                   prefixIcon: Icon(Icons.book),
@@ -130,7 +130,7 @@ class _AddTimetableEntryPageState extends State<AddTimetableEntryPage> {
 
               // Day of week
               DropdownButtonFormField<int>(
-                value: _selectedDay,
+                initialValue: _selectedDay,
                 decoration: const InputDecoration(
                   labelText: 'Day of Week',
                   prefixIcon: Icon(Icons.calendar_today),
@@ -173,7 +173,7 @@ class _AddTimetableEntryPageState extends State<AddTimetableEntryPage> {
 
               // Class type
               DropdownButtonFormField<String>(
-                value: _selectedType,
+                initialValue: _selectedType,
                 decoration: const InputDecoration(
                   labelText: 'Class Type',
                   prefixIcon: Icon(Icons.category),

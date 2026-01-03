@@ -112,7 +112,7 @@ class _SubjectDetailPageState extends State<SubjectDetailPage> {
                           color: AppTheme.getStatusColor(
                             percentage,
                             controller.threshold.value,
-                          ).withOpacity(0.1),
+                          ).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -180,7 +180,7 @@ class _SubjectDetailPageState extends State<SubjectDetailPage> {
                   Text(
                     '${controller.subjectHistory.length} records',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -227,7 +227,7 @@ class _SubjectDetailPageState extends State<SubjectDetailPage> {
             Text(
               label,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -264,7 +264,7 @@ class _SubjectDetailPageState extends State<SubjectDetailPage> {
             height: 40,
             decoration: BoxDecoration(
               color: (isPresent ? AppTheme.safeColor : AppTheme.criticalColor)
-                  .withOpacity(0.15),
+                  .withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
@@ -281,14 +281,14 @@ class _SubjectDetailPageState extends State<SubjectDetailPage> {
           subtitle: Text(
             AttendanceUtils.formatDateLong(date),
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
           trailing: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: (isPresent ? AppTheme.safeColor : AppTheme.criticalColor)
-                  .withOpacity(0.1),
+                  .withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -334,7 +334,7 @@ class _SubjectDetailPageState extends State<SubjectDetailPage> {
   void _handleMenuAction(String action, AttendanceController controller) {
     switch (action) {
       case 'edit':
-        Get.toNamed('/subject/edit/${subjectId}');
+        Get.toNamed('/subject/edit/$subjectId');
         break;
       case 'delete':
         _showDeleteConfirmation(controller);

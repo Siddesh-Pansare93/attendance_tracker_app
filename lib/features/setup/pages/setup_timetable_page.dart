@@ -31,7 +31,7 @@ class _SetupTimetablePageState extends State<SetupTimetablePage> {
           // Progress indicator
           LinearProgressIndicator(
             value: 1.0,
-            backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+            backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
           ),
 
           Expanded(
@@ -50,7 +50,7 @@ class _SetupTimetablePageState extends State<SetupTimetablePage> {
                   Text(
                     'Add your weekly schedule. You can always edit this later.',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -98,7 +98,7 @@ class _SetupTimetablePageState extends State<SetupTimetablePage> {
                           // Subject dropdown
                           Obx(
                             () => DropdownButtonFormField<String>(
-                              value: _selectedSubjectId,
+                              initialValue: _selectedSubjectId,
                               decoration: const InputDecoration(
                                 labelText: 'Subject',
                                 contentPadding: EdgeInsets.symmetric(
@@ -145,7 +145,7 @@ class _SetupTimetablePageState extends State<SetupTimetablePage> {
                             children: [
                               Expanded(
                                 child: DropdownButtonFormField<String>(
-                                  value: _selectedType,
+                                  initialValue: _selectedType,
                                   decoration: const InputDecoration(
                                     labelText: 'Type',
                                     contentPadding: EdgeInsets.symmetric(
@@ -160,8 +160,9 @@ class _SetupTimetablePageState extends State<SetupTimetablePage> {
                                     );
                                   }).toList(),
                                   onChanged: (v) {
-                                    if (v != null)
+                                    if (v != null) {
                                       setState(() => _selectedType = v);
+                                    }
                                   },
                                 ),
                               ),
@@ -185,7 +186,7 @@ class _SetupTimetablePageState extends State<SetupTimetablePage> {
                     '${kDayNames[_selectedDay]} Classes',
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -205,8 +206,8 @@ class _SetupTimetablePageState extends State<SetupTimetablePage> {
                           child: Text(
                             'No classes added for ${kDayNames[_selectedDay]}',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(
-                                0.5,
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.5,
                               ),
                             ),
                           ),
@@ -223,8 +224,8 @@ class _SetupTimetablePageState extends State<SetupTimetablePage> {
                               leading: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary.withOpacity(
-                                    0.1,
+                                  color: theme.colorScheme.primary.withValues(
+                                    alpha: 0.1,
                                   ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),

@@ -32,7 +32,7 @@ class _SetupSubjectsPageState extends State<SetupSubjectsPage> {
           // Progress indicator
           LinearProgressIndicator(
             value: 0.5,
-            backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+            backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
           ),
 
           Expanded(
@@ -51,7 +51,7 @@ class _SetupSubjectsPageState extends State<SetupSubjectsPage> {
                   Text(
                     'Add all the subjects you want to track attendance for.',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -100,8 +100,9 @@ class _SetupSubjectsPageState extends State<SetupSubjectsPage> {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: theme.colorScheme.primary
-                                        .withOpacity(0.1),
+                                    color: theme.colorScheme.primary.withValues(
+                                      alpha: 0.1,
+                                    ),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
@@ -135,7 +136,7 @@ class _SetupSubjectsPageState extends State<SetupSubjectsPage> {
                     'Your Subjects',
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -150,16 +151,17 @@ class _SetupSubjectsPageState extends State<SetupSubjectsPage> {
                               Icon(
                                 Icons.school_outlined,
                                 size: 48,
-                                color: theme.colorScheme.onSurface.withOpacity(
-                                  0.3,
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.3,
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 'No subjects added yet',
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.onSurface
-                                      .withOpacity(0.5),
+                                  color: theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.5,
+                                  ),
                                 ),
                               ),
                             ],
@@ -176,7 +178,7 @@ class _SetupSubjectsPageState extends State<SetupSubjectsPage> {
                             child: ListTile(
                               leading: CircleAvatar(
                                 backgroundColor: theme.colorScheme.primary
-                                    .withOpacity(0.1),
+                                    .withValues(alpha: 0.1),
                                 child: Icon(
                                   Icons.book,
                                   color: theme.colorScheme.primary,

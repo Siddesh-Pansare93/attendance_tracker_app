@@ -78,7 +78,7 @@ class TodayAttendancePage extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.1),
+                color: theme.colorScheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -99,7 +99,7 @@ class TodayAttendancePage extends StatelessWidget {
                 Text(
                   AttendanceUtils.formatDateForDisplay(today),
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ],
@@ -164,7 +164,7 @@ class TodayAttendancePage extends StatelessWidget {
         Text(
           label,
           style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
       ],
@@ -217,7 +217,9 @@ class TodayAttendancePage extends StatelessWidget {
                           Icon(
                             Icons.access_time,
                             size: 14,
-                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.5,
+                            ),
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -226,8 +228,8 @@ class TodayAttendancePage extends StatelessWidget {
                               entry.endTime,
                             ),
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(
-                                0.6,
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.6,
                               ),
                             ),
                           ),
@@ -238,8 +240,8 @@ class TodayAttendancePage extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.secondary.withOpacity(
-                                0.1,
+                              color: theme.colorScheme.secondary.withValues(
+                                alpha: 0.1,
                               ),
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -336,7 +338,7 @@ class TodayAttendancePage extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: (isPresent ? AppTheme.safeColor : AppTheme.criticalColor)
-                .withOpacity(0.15),
+                .withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(

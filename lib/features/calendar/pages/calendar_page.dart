@@ -50,7 +50,7 @@ class CalendarPage extends StatelessWidget {
                     onPageChanged: controller.onPageChanged,
                     calendarStyle: CalendarStyle(
                       todayDecoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.3),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.3),
                         shape: BoxShape.circle,
                       ),
                       selectedDecoration: BoxDecoration(
@@ -158,8 +158,8 @@ class CalendarPage extends StatelessWidget {
                             Text(
                               '${controller.recordsForDate.length} classes',
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withOpacity(
-                                  0.6,
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
                                 ),
                               ),
                             ),
@@ -176,15 +176,16 @@ class CalendarPage extends StatelessWidget {
                                 Icon(
                                   Icons.event_available,
                                   size: 48,
-                                  color: theme.colorScheme.onSurface
-                                      .withOpacity(0.3),
+                                  color: theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.3,
+                                  ),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
                                   'No attendance recorded',
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: theme.colorScheme.onSurface
-                                        .withOpacity(0.5),
+                                        .withValues(alpha: 0.5),
                                   ),
                                 ),
                               ],
@@ -239,7 +240,7 @@ class CalendarPage extends StatelessWidget {
           height: 40,
           decoration: BoxDecoration(
             color: (isPresent ? AppTheme.safeColor : AppTheme.criticalColor)
-                .withOpacity(0.15),
+                .withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
@@ -257,7 +258,7 @@ class CalendarPage extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: (isPresent ? AppTheme.safeColor : AppTheme.criticalColor)
-                .withOpacity(0.1),
+                .withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(

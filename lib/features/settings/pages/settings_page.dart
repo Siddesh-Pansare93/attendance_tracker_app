@@ -66,7 +66,7 @@ class SettingsPage extends StatelessWidget {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.1),
+                            color: theme.colorScheme.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -92,7 +92,7 @@ class SettingsPage extends StatelessWidget {
                     Text(
                       'You will be warned when your attendance falls below this percentage',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -148,7 +148,7 @@ class SettingsPage extends StatelessWidget {
                   Text(
                     'Version 1.0.0',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.5),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -225,7 +225,7 @@ class SettingsPage extends StatelessWidget {
         Text(
           label,
           style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.6),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
       ],
@@ -245,7 +245,7 @@ class SettingsPage extends StatelessWidget {
         style: theme.textTheme.titleSmall?.copyWith(
           color: isWarning
               ? AppTheme.criticalColor
-              : theme.colorScheme.onSurface.withOpacity(0.6),
+              : theme.colorScheme.onSurface.withValues(alpha: 0.6),
           fontWeight: FontWeight.w600,
         ),
       ),
