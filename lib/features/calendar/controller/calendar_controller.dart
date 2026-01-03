@@ -1,0 +1,91 @@
+import 'package:get/get.dart';
+import 'package:smart_attendance_app/core/services/storage_service.dart';
+import 'package:smart_attendance_app/features/attendance/data/model/attendance_record_model.dart';
+
+/// Controller for the calendar view
+class CalendarController extends GetxController {
+  final StorageService _storage = StorageService.instance;
+
+  // Observable state
+  final selectedDate = DateTime.now().obs;
+  final focusedDate = DateTime.now().obs;
+  final allRecords = <AttendanceRecord>[].obs;
+  final recordsForDate = <AttendanceRecord>[].obs;
+  final isLoading = false.obs;
+
+  // Map of date strings to list of records (for calendar markers)
+  final recordsByDate = <String, List<AttendanceRecord>>{}.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    loadRecords();
+    // Watch for date selection changes
+    ever(selectedDate, (_) => _loadRecordsForDate());
+  }
+
+  /// Load all attendance records
+  Future<void> loadRecords() async {
+    isLoading.value = true;
+    try {
+      allRecords.value = _storage.getAllAttendanceRecords();
+      _buildRecordsByDate();
+      _loadRecordsForDate();
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Build map of records grouped by date
+  void _buildRecordsByDate() {
+    recordsByDate.clear();
+    for (final record in allRecords) {
+      if (!recordsByDate.containsKey(record.date)) {
+        recordsByDate[record.date] = [];
+      }
+      recordsByDate[record.date]!.add(record);
+    }
+  }
+
+  /// Load records for the selected date
+  void _loadRecordsForDate() {
+    final dateStr = _formatDate(selectedDate.value);
+    recordsForDate.value = recordsByDate[dateStr] ?? [];
+  }
+
+  /// Check if a date has records
+  bool hasRecordsOnDate(DateTime date) {
+    final dateStr = _formatDate(date);
+    return recordsByDate.containsKey(dateStr);
+  }
+
+  /// Get records for a specific date
+  List<AttendanceRecord> getRecordsForDate(DateTime date) {
+    final dateStr = _formatDate(date);
+    return recordsByDate[dateStr] ?? [];
+  }
+
+  /// Count present/absent for a date
+  int getPresentCount(DateTime date) {
+    return getRecordsForDate(date).where((r) => r.isPresent).length;
+  }
+
+  int getAbsentCount(DateTime date) {
+    return getRecordsForDate(date).where((r) => r.isAbsent).length;
+  }
+
+  /// Format date to storage format
+  String _formatDate(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Select a date
+  void selectDate(DateTime date) {
+    selectedDate.value = date;
+  }
+
+  /// Change focused month
+  void onPageChanged(DateTime focusedDay) {
+    focusedDate.value = focusedDay;
+  }
+}
