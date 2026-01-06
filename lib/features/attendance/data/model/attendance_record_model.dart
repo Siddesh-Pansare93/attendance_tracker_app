@@ -39,6 +39,9 @@ class AttendanceRecord extends HiveObject {
   /// Check if marked as absent
   bool get isAbsent => status == 'absent';
 
+  /// Check if marked as cancelled
+  bool get isCancelled => status == 'cancelled';
+
   /// Create a copy with updated values
   AttendanceRecord copyWith({
     String? id,

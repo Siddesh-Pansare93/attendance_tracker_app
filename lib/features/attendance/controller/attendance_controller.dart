@@ -77,9 +77,10 @@ class AttendanceController extends GetxController {
 
   /// Mark attendance for a specific timetable entry today
   /// Now tracks by timetableEntryId to support multiple lectures of same subject
+  /// Status can be: 'present', 'absent', or 'cancelled'
   Future<void> markAttendance(
     String subjectId,
-    bool isPresent, {
+    String status, {
     String? timetableEntryId,
   }) async {
     final todayStr = AttendanceUtils.getTodayString();
@@ -95,18 +96,27 @@ class AttendanceController extends GetxController {
     if (existingRecord != null) {
       // Update existing record
       final oldStatus = existingRecord.status;
-      existingRecord.status = isPresent ? 'present' : 'absent';
+      existingRecord.status = status;
       await _storage.saveAttendanceRecord(existingRecord);
 
-      // Update subject counts
-      if (oldStatus != existingRecord.status) {
-        if (isPresent) {
-          // Changed from absent to present
-          subject.attendedClasses += 1;
-        } else {
-          // Changed from present to absent
+      // Update subject counts based on status changes
+      if (oldStatus != status) {
+        // Handle old status
+        if (oldStatus == 'present') {
           subject.attendedClasses -= 1;
         }
+        if (oldStatus != 'cancelled') {
+          subject.totalClasses -= 1;
+        }
+
+        // Handle new status
+        if (status == 'present') {
+          subject.attendedClasses += 1;
+        }
+        if (status != 'cancelled') {
+          subject.totalClasses += 1;
+        }
+
         await _storage.saveSubject(subject);
       }
     } else {
@@ -115,18 +125,20 @@ class AttendanceController extends GetxController {
         id: _uuid.v4(),
         subjectId: subjectId,
         date: todayStr,
-        status: isPresent ? 'present' : 'absent',
+        status: status,
         timetableEntryId: timetableEntryId,
       );
       await _storage.saveAttendanceRecord(record);
       todayRecords[recordKey] = record;
 
-      // Update subject counts
-      subject.totalClasses += 1;
-      if (isPresent) {
-        subject.attendedClasses += 1;
+      // Update subject counts (cancelled doesn't count towards total)
+      if (status != 'cancelled') {
+        subject.totalClasses += 1;
+        if (status == 'present') {
+          subject.attendedClasses += 1;
+        }
+        await _storage.saveSubject(subject);
       }
-      await _storage.saveSubject(subject);
     }
 
     // Refresh subjects list
@@ -161,6 +173,11 @@ class AttendanceController extends GetxController {
     );
     await _storage.saveSubject(subject);
     subjects.value = _storage.getAllSubjects();
+
+    // Refresh dashboard
+    if (Get.isRegistered<DashboardController>()) {
+      Get.find<DashboardController>().loadData();
+    }
   }
 
   /// Update an existing subject

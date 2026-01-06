@@ -261,36 +261,60 @@ class TodayAttendancePage extends StatelessWidget {
     String subjectId,
     String entryId,
   ) {
-    return Row(
+    return Column(
       children: [
-        Expanded(
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => controller.markAttendance(
+                  subjectId,
+                  'absent',
+                  timetableEntryId: entryId,
+                ),
+                icon: const Icon(Icons.close, size: 18),
+                label: const Text('Absent'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.criticalColor,
+                  side: const BorderSide(color: AppTheme.criticalColor),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => controller.markAttendance(
+                  subjectId,
+                  'present',
+                  timetableEntryId: entryId,
+                ),
+                icon: const Icon(Icons.check, size: 18),
+                label: const Text('Present'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.safeColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: () => controller.markAttendance(
               subjectId,
-              false,
+              'cancelled',
               timetableEntryId: entryId,
             ),
-            icon: const Icon(Icons.close, color: AppTheme.criticalColor),
-            label: const Text('Absent'),
+            icon: const Icon(Icons.event_busy, size: 18),
+            label: const Text('Lecture Cancelled'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.criticalColor,
-              side: const BorderSide(color: AppTheme.criticalColor),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: () => controller.markAttendance(
-              subjectId,
-              true,
-              timetableEntryId: entryId,
-            ),
-            icon: const Icon(Icons.check),
-            label: const Text('Present'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.safeColor,
-              foregroundColor: Colors.white,
+              foregroundColor: AppTheme.warningColor,
+              side: const BorderSide(color: AppTheme.warningColor),
+              padding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),
         ),
@@ -306,7 +330,27 @@ class TodayAttendancePage extends StatelessWidget {
     String entryId,
   ) {
     final theme = Theme.of(context);
-    final isPresent = status == 'present';
+
+    Color statusColor;
+    IconData statusIcon;
+    String statusText;
+
+    switch (status) {
+      case 'present':
+        statusColor = AppTheme.safeColor;
+        statusIcon = Icons.check_circle;
+        statusText = 'Marked Present';
+        break;
+      case 'cancelled':
+        statusColor = AppTheme.warningColor;
+        statusIcon = Icons.event_busy;
+        statusText = 'Lecture Cancelled';
+        break;
+      default:
+        statusColor = AppTheme.criticalColor;
+        statusIcon = Icons.cancel;
+        statusText = 'Marked Absent';
+    }
 
     return Row(
       children: [
@@ -314,25 +358,18 @@ class TodayAttendancePage extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: (isPresent ? AppTheme.safeColor : AppTheme.criticalColor)
-                .withValues(alpha: 0.15),
+            color: statusColor.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                isPresent ? Icons.check_circle : Icons.cancel,
-                color: isPresent ? AppTheme.safeColor : AppTheme.criticalColor,
-                size: 20,
-              ),
+              Icon(statusIcon, color: statusColor, size: 20),
               const SizedBox(width: 8),
               Text(
-                isPresent ? 'Marked Present' : 'Marked Absent',
+                statusText,
                 style: TextStyle(
-                  color: isPresent
-                      ? AppTheme.safeColor
-                      : AppTheme.criticalColor,
+                  color: statusColor,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -347,7 +384,7 @@ class TodayAttendancePage extends StatelessWidget {
             controller,
             subjectId,
             entryId,
-            isPresent,
+            status,
           ),
           child: Text(
             'Change',
@@ -363,33 +400,63 @@ class TodayAttendancePage extends StatelessWidget {
     AttendanceController controller,
     String subjectId,
     String entryId,
-    bool currentlyPresent,
+    String currentStatus,
   ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Change Attendance'),
-        content: Text(
-          currentlyPresent
-              ? 'Change from Present to Absent?'
-              : 'Change from Absent to Present?',
-        ),
+        content: const Text('Select new attendance status:'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
-            onPressed: () {
-              controller.markAttendance(
-                subjectId,
-                !currentlyPresent,
-                timetableEntryId: entryId,
-              );
-              Navigator.pop(context);
-            },
-            child: const Text('Confirm'),
-          ),
+          if (currentStatus != 'absent')
+            TextButton(
+              onPressed: () {
+                controller.markAttendance(
+                  subjectId,
+                  'absent',
+                  timetableEntryId: entryId,
+                );
+                Navigator.pop(context);
+              },
+              child: Text(
+                'Absent',
+                style: TextStyle(color: AppTheme.criticalColor),
+              ),
+            ),
+          if (currentStatus != 'present')
+            ElevatedButton(
+              onPressed: () {
+                controller.markAttendance(
+                  subjectId,
+                  'present',
+                  timetableEntryId: entryId,
+                );
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.safeColor,
+              ),
+              child: const Text('Present'),
+            ),
+          if (currentStatus != 'cancelled')
+            TextButton(
+              onPressed: () {
+                controller.markAttendance(
+                  subjectId,
+                  'cancelled',
+                  timetableEntryId: entryId,
+                );
+                Navigator.pop(context);
+              },
+              child: Text(
+                'Cancelled',
+                style: TextStyle(color: AppTheme.warningColor),
+              ),
+            ),
         ],
       ),
     );

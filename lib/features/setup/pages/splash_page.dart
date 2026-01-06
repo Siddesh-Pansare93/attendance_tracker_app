@@ -137,6 +137,36 @@ class _SplashPageState extends State<SplashPage>
                         ),
                       ),
                     ),
+                    const Spacer(),
+
+                    // Footer
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Made with ',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.5,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.favorite_rounded,
+                          size: 14,
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.8),
+                        ),
+                        Text(
+                          ' by Siddesh Pansare',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
                   ],
                 ),
               ),

@@ -270,15 +270,15 @@ class DashboardPage extends StatelessWidget {
                       ),
                   ],
                 ),
-                Text(
-                  AttendanceUtils.formatTimeRange(
-                    entry.startTime,
-                    entry.endTime,
-                  ),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                ),
+                // Text(
+                //   AttendanceUtils.formatTimeRange(
+                //     entry.startTime,
+                //     entry.endTime,
+                //   ),
+                //   style: theme.textTheme.bodySmall?.copyWith(
+                //     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                //   ),
+                // ),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
