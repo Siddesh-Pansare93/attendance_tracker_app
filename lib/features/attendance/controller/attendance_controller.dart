@@ -15,7 +15,8 @@ class AttendanceController extends GetxController {
   // Observable state
   final subjects = <Subject>[].obs;
   final todayClasses = <TimetableEntry>[].obs;
-  final todayRecords = <String, AttendanceRecord>{}.obs; // subjectId -> record
+  final todayRecords =
+      <String, AttendanceRecord>{}.obs; // timetableEntryId -> record
   final selectedSubject = Rxn<Subject>();
   final subjectHistory = <AttendanceRecord>[].obs;
   final isLoading = true.obs;
@@ -41,12 +42,14 @@ class AttendanceController extends GetxController {
       final today = AttendanceUtils.getCurrentDayOfWeek();
       todayClasses.value = _storage.getTimetableForDay(today);
 
-      // Load today's attendance records
+      // Load today's attendance records - keyed by timetableEntryId or subjectId for backwards compat
       final todayStr = AttendanceUtils.getTodayString();
       final records = _storage.getAttendanceForDate(todayStr);
       todayRecords.clear();
       for (final record in records) {
-        todayRecords[record.subjectId] = record;
+        // Use timetableEntryId as key if available, otherwise fall back to subjectId
+        final key = record.timetableEntryId ?? record.subjectId;
+        todayRecords[key] = record;
       }
     } finally {
       isLoading.value = false;
@@ -62,24 +65,32 @@ class AttendanceController extends GetxController {
     }
   }
 
-  /// Check if attendance is already marked for subject today
-  bool isMarkedToday(String subjectId) {
-    return todayRecords.containsKey(subjectId);
+  /// Check if attendance is already marked for a specific timetable entry today
+  bool isMarkedToday(String entryId) {
+    return todayRecords.containsKey(entryId);
   }
 
-  /// Get attendance status for subject today
-  String? getTodayStatus(String subjectId) {
-    return todayRecords[subjectId]?.status;
+  /// Get attendance status for a specific timetable entry today
+  String? getTodayStatus(String entryId) {
+    return todayRecords[entryId]?.status;
   }
 
-  /// Mark attendance for a subject today
-  Future<void> markAttendance(String subjectId, bool isPresent) async {
+  /// Mark attendance for a specific timetable entry today
+  /// Now tracks by timetableEntryId to support multiple lectures of same subject
+  Future<void> markAttendance(
+    String subjectId,
+    bool isPresent, {
+    String? timetableEntryId,
+  }) async {
     final todayStr = AttendanceUtils.getTodayString();
     final subject = getSubject(subjectId);
     if (subject == null) return;
 
+    // Use timetableEntryId as key if provided, otherwise fall back to subjectId
+    final recordKey = timetableEntryId ?? subjectId;
+
     // Check if already marked
-    final existingRecord = todayRecords[subjectId];
+    final existingRecord = todayRecords[recordKey];
 
     if (existingRecord != null) {
       // Update existing record
@@ -99,15 +110,16 @@ class AttendanceController extends GetxController {
         await _storage.saveSubject(subject);
       }
     } else {
-      // Create new record
+      // Create new record with timetableEntryId
       final record = AttendanceRecord(
         id: _uuid.v4(),
         subjectId: subjectId,
         date: todayStr,
         status: isPresent ? 'present' : 'absent',
+        timetableEntryId: timetableEntryId,
       );
       await _storage.saveAttendanceRecord(record);
-      todayRecords[subjectId] = record;
+      todayRecords[recordKey] = record;
 
       // Update subject counts
       subject.totalClasses += 1;
@@ -199,7 +211,8 @@ class AttendanceController extends GetxController {
     // Remove from today's records if applicable
     final todayStr = AttendanceUtils.getTodayString();
     if (record.date == todayStr) {
-      todayRecords.remove(record.subjectId);
+      final key = record.timetableEntryId ?? record.subjectId;
+      todayRecords.remove(key);
     }
 
     // Refresh dashboard

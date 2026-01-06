@@ -21,11 +21,16 @@ class AttendanceRecord extends HiveObject {
   @HiveField(3)
   String status;
 
+  /// Timetable entry ID for tracking individual lecture instances
+  @HiveField(4)
+  final String? timetableEntryId;
+
   AttendanceRecord({
     required this.id,
     required this.subjectId,
     required this.date,
     required this.status,
+    this.timetableEntryId,
   });
 
   /// Check if marked as present
@@ -40,18 +45,26 @@ class AttendanceRecord extends HiveObject {
     String? subjectId,
     String? date,
     String? status,
+    String? timetableEntryId,
   }) {
     return AttendanceRecord(
       id: id ?? this.id,
       subjectId: subjectId ?? this.subjectId,
       date: date ?? this.date,
       status: status ?? this.status,
+      timetableEntryId: timetableEntryId ?? this.timetableEntryId,
     );
   }
 
   /// Convert to JSON map
   Map<String, dynamic> toJson() {
-    return {'id': id, 'subjectId': subjectId, 'date': date, 'status': status};
+    return {
+      'id': id,
+      'subjectId': subjectId,
+      'date': date,
+      'status': status,
+      'timetableEntryId': timetableEntryId,
+    };
   }
 
   /// Create from JSON map
@@ -61,11 +74,12 @@ class AttendanceRecord extends HiveObject {
       subjectId: json['subjectId'] as String,
       date: json['date'] as String,
       status: json['status'] as String,
+      timetableEntryId: json['timetableEntryId'] as String?,
     );
   }
 
   @override
   String toString() {
-    return 'AttendanceRecord(id: $id, subjectId: $subjectId, date: $date, status: $status)';
+    return 'AttendanceRecord(id: $id, subjectId: $subjectId, date: $date, status: $status, entryId: $timetableEntryId)';
   }
 }

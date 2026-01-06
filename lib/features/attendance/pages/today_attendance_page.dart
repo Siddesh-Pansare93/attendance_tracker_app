@@ -188,8 +188,9 @@ class TodayAttendancePage extends StatelessWidget {
     final subject = controller.getSubject(entry.subjectId);
     if (subject == null) return const SizedBox.shrink();
 
-    final isMarked = controller.isMarkedToday(entry.subjectId);
-    final status = controller.getTodayStatus(entry.subjectId);
+    // Use entry.id for tracking individual lecture instances
+    final isMarked = controller.isMarkedToday(entry.id);
+    final status = controller.getTodayStatus(entry.id);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -232,11 +233,22 @@ class TodayAttendancePage extends StatelessWidget {
             const Divider(height: 1),
             const SizedBox(height: 16),
 
-            // Action buttons
+            // Action buttons - pass both subjectId AND entryId
             if (isMarked)
-              _buildMarkedStatus(context, status!, controller, entry.subjectId)
+              _buildMarkedStatus(
+                context,
+                status!,
+                controller,
+                entry.subjectId,
+                entry.id,
+              )
             else
-              _buildActionButtons(context, controller, entry.subjectId),
+              _buildActionButtons(
+                context,
+                controller,
+                entry.subjectId,
+                entry.id,
+              ),
           ],
         ),
       ),
@@ -247,12 +259,17 @@ class TodayAttendancePage extends StatelessWidget {
     BuildContext context,
     AttendanceController controller,
     String subjectId,
+    String entryId,
   ) {
     return Row(
       children: [
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () => controller.markAttendance(subjectId, false),
+            onPressed: () => controller.markAttendance(
+              subjectId,
+              false,
+              timetableEntryId: entryId,
+            ),
             icon: const Icon(Icons.close, color: AppTheme.criticalColor),
             label: const Text('Absent'),
             style: OutlinedButton.styleFrom(
@@ -264,7 +281,11 @@ class TodayAttendancePage extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: () => controller.markAttendance(subjectId, true),
+            onPressed: () => controller.markAttendance(
+              subjectId,
+              true,
+              timetableEntryId: entryId,
+            ),
             icon: const Icon(Icons.check),
             label: const Text('Present'),
             style: ElevatedButton.styleFrom(
@@ -282,6 +303,7 @@ class TodayAttendancePage extends StatelessWidget {
     String status,
     AttendanceController controller,
     String subjectId,
+    String entryId,
   ) {
     final theme = Theme.of(context);
     final isPresent = status == 'present';
@@ -320,8 +342,13 @@ class TodayAttendancePage extends StatelessWidget {
         const Spacer(),
         // Change button
         TextButton(
-          onPressed: () =>
-              _showChangeDialog(context, controller, subjectId, isPresent),
+          onPressed: () => _showChangeDialog(
+            context,
+            controller,
+            subjectId,
+            entryId,
+            isPresent,
+          ),
           child: Text(
             'Change',
             style: TextStyle(color: theme.colorScheme.primary),
@@ -335,6 +362,7 @@ class TodayAttendancePage extends StatelessWidget {
     BuildContext context,
     AttendanceController controller,
     String subjectId,
+    String entryId,
     bool currentlyPresent,
   ) {
     showDialog(
@@ -353,7 +381,11 @@ class TodayAttendancePage extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              controller.markAttendance(subjectId, !currentlyPresent);
+              controller.markAttendance(
+                subjectId,
+                !currentlyPresent,
+                timetableEntryId: entryId,
+              );
               Navigator.pop(context);
             },
             child: const Text('Confirm'),

@@ -63,73 +63,76 @@ class TimetablePage extends StatelessWidget {
         itemCount: 7,
         itemBuilder: (context, index) {
           final day = index;
-          final isSelected = controller.selectedDay.value == day;
-          final hasClasses = controller.hasClassesOnDay(day);
-          final classCount = controller.getClassCountForDay(day);
+          return Obx(() {
+            final isSelected = controller.selectedDay.value == day;
+            final hasClasses = controller.hasClassesOnDay(day);
+            final classCount = controller.getClassCountForDay(day);
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: InkWell(
-              onTap: () => controller.selectedDay.value = day,
-              borderRadius: BorderRadius.circular(16),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 70,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? theme.colorScheme.primary
-                      : theme.cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: GestureDetector(
+                onTap: () {
+                  controller.selectedDay.value = day;
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 70,
+                  decoration: BoxDecoration(
                     color: isSelected
                         ? theme.colorScheme.primary
-                        : theme.dividerColor,
-                  ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      kShortDayNames[day],
-                      style: TextStyle(
-                        color: isSelected
-                            ? Colors.white
-                            : theme.colorScheme.onSurface,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
+                        : theme.cardColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : theme.dividerColor,
                     ),
-                    if (hasClasses)
-                      Container(
-                        margin: const EdgeInsets.only(top: 4),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        kShortDayNames[day],
+                        style: TextStyle(
                           color: isSelected
-                              ? Colors.white.withValues(alpha: 0.2)
-                              : theme.colorScheme.primary.withValues(
-                                  alpha: 0.1,
-                                ),
-                          borderRadius: BorderRadius.circular(8),
+                              ? Colors.white
+                              : theme.colorScheme.onSurface,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
                         ),
-                        child: Text(
-                          '$classCount',
-                          style: TextStyle(
+                      ),
+                      if (hasClasses)
+                        Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
                             color: isSelected
-                                ? Colors.white
-                                : theme.colorScheme.primary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
+                                ? Colors.white.withValues(alpha: 0.2)
+                                : theme.colorScheme.primary.withValues(
+                                    alpha: 0.1,
+                                  ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '$classCount',
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : theme.colorScheme.primary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
+            );
+          });
         },
       ),
     );
@@ -166,51 +169,73 @@ class TimetablePage extends StatelessWidget {
   ) {
     final theme = Theme.of(context);
     final subjectName = controller.getSubjectName(entry.subjectId);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Dismissible(
       key: Key(entry.id),
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 16),
+        padding: const EdgeInsets.only(right: 20),
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: Colors.red,
+          color: Colors.red.withValues(alpha: 0.9),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Icon(Icons.delete, color: Colors.white),
+        child: const Icon(Icons.delete_rounded, color: Colors.white, size: 24),
       ),
       confirmDismiss: (direction) => _confirmDelete(context),
       onDismissed: (direction) => controller.deleteEntry(entry.id),
-      child: Card(
+      child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF161622) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? const Color(0xFF2A2A3C) : const Color(0xFFE2E8F0),
           ),
-          leading: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            // Subject icon
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                Icons.book_rounded,
+                color: theme.colorScheme.primary,
+                size: 26,
+              ),
             ),
-            child: Icon(Icons.book, color: theme.colorScheme.primary),
-          ),
-          title: Text(
-            subjectName,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
+            const SizedBox(width: 16),
+
+            // Subject info
+            Expanded(
+              child: Text(
+                subjectName,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-          ),
-          trailing: IconButton(
-            icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
-            onPressed: () async {
-              final confirm = await _confirmDelete(context);
-              if (confirm) controller.deleteEntry(entry.id);
-            },
-          ),
+
+            // Delete button
+            IconButton(
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                color: theme.colorScheme.error.withValues(alpha: 0.7),
+              ),
+              onPressed: () async {
+                final confirm = await _confirmDelete(context);
+                if (confirm) controller.deleteEntry(entry.id);
+              },
+            ),
+          ],
         ),
       ),
     );

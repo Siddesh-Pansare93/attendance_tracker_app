@@ -68,16 +68,9 @@ class DashboardPage extends StatelessWidget {
     DashboardController controller,
   ) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [colorScheme.primary, colorScheme.primary.withValues(alpha: 0.8)],
-        ),
-      ),
+      color: AppTheme.primaryColor,
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -103,9 +96,10 @@ class DashboardPage extends StatelessWidget {
                       'Overall Attendance',
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: Colors.white.withValues(alpha: 0.9),
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Obx(
                       () => Row(
                         children: [
@@ -114,14 +108,14 @@ class DashboardPage extends StatelessWidget {
                             '${controller.subjects.length}',
                             'Subjects',
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 20),
                           _buildMiniStat(
                             context,
                             '${controller.subjectsAboveThreshold}',
                             'Safe',
                             color: AppTheme.safeColor,
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 20),
                           _buildMiniStat(
                             context,
                             '${controller.subjectsBelowThreshold}',
@@ -159,7 +153,10 @@ class DashboardPage extends StatelessWidget {
         ),
         Text(
           label,
-          style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.7)),
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.white.withValues(alpha: 0.7),
+          ),
         ),
       ],
     );
@@ -402,7 +399,9 @@ class DashboardPage extends StatelessWidget {
                     Text(
                       '${subject.attendedClasses} / ${subject.totalClasses} classes',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.6,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 4),

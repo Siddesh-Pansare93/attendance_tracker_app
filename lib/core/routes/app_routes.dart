@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:smart_attendance_app/features/setup/pages/splash_page.dart';
 import 'package:smart_attendance_app/features/setup/pages/welcome_page.dart';
 import 'package:smart_attendance_app/features/dashboard/pages/home_page.dart';
 import 'package:smart_attendance_app/features/setup/pages/setup_subjects_page.dart';
@@ -16,6 +17,7 @@ class AppRoutes {
   AppRoutes._();
 
   // Setup routes
+  static const String splash = '/';
   static const String welcome = '/welcome';
   static const String setupSubjects = '/setup/subjects';
   static const String setupTimetable = '/setup/timetable';
@@ -36,6 +38,12 @@ class AppRoutes {
 
   /// All app pages/routes
   static final List<GetPage> pages = [
+    // Splash screen - initial route
+    GetPage(
+      name: splash,
+      page: () => const SplashPage(),
+      transition: Transition.fadeIn,
+    ),
     // Setup flow
     GetPage(
       name: welcome,
@@ -80,12 +88,7 @@ class AppRoutes {
       transition: Transition.fadeIn,
     ),
 
-    // Subject screens
-    GetPage(
-      name: subjectDetail,
-      page: () => const SubjectDetailPage(),
-      transition: Transition.rightToLeft,
-    ),
+    // Subject screens - ADD/EDIT routes must come before parameterized route
     GetPage(
       name: addSubject,
       page: () => const AddSubjectPage(),
@@ -94,6 +97,11 @@ class AppRoutes {
     GetPage(
       name: editSubject,
       page: () => const AddSubjectPage(isEdit: true),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: subjectDetail,
+      page: () => const SubjectDetailPage(),
       transition: Transition.rightToLeft,
     ),
 
