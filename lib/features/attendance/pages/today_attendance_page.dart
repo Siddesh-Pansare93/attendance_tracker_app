@@ -185,6 +185,7 @@ class TodayAttendancePage extends StatelessWidget {
     AttendanceController controller,
   ) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final subject = controller.getSubject(entry.subjectId);
     if (subject == null) return const SizedBox.shrink();
 
@@ -192,16 +193,44 @@ class TodayAttendancePage extends StatelessWidget {
     final isMarked = controller.isMarkedToday(entry.id);
     final status = controller.getTodayStatus(entry.id);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF161622) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2A2A3C) : const Color(0xFFE2E8F0),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header row
+            // Header row with icon
             Row(
               children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    Icons.book_rounded,
+                    color: theme.colorScheme.primary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,26 +241,46 @@ class TodayAttendancePage extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
+                      Text(
+                        '${subject.attendedClasses}/${subject.totalClasses} classes',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.5,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                // Current attendance
-                Text(
-                  '${subject.attendancePercentage.toStringAsFixed(1)}%',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+                // Attendance percentage badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
                     color: AppTheme.getStatusColor(
                       subject.attendancePercentage,
                       controller.threshold.value,
+                    ).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${subject.attendancePercentage.toStringAsFixed(1)}%',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: AppTheme.getStatusColor(
+                        subject.attendancePercentage,
+                        controller.threshold.value,
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
 
-            const SizedBox(height: 16),
-            const Divider(height: 1),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
             // Action buttons - pass both subjectId AND entryId
             if (isMarked)

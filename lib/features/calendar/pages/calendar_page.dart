@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:smart_attendance_app/core/routes/app_routes.dart';
 import 'package:smart_attendance_app/core/theme/app_theme.dart';
 import 'package:smart_attendance_app/core/utils/attendance_utils.dart';
 import 'package:smart_attendance_app/core/services/storage_service.dart';
@@ -81,6 +82,9 @@ class CalendarPage extends StatelessWidget {
                         final absentCount = records
                             .where((r) => r.isAbsent)
                             .length;
+                        final cancelledCount = records
+                            .where((r) => r.isCancelled)
+                            .length;
 
                         return Positioned(
                           bottom: 1,
@@ -111,6 +115,18 @@ class CalendarPage extends StatelessWidget {
                                     shape: BoxShape.circle,
                                   ),
                                 ),
+                              if (cancelledCount > 0)
+                                Container(
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 1,
+                                  ),
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: AppTheme.warningColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
                             ],
                           ),
                         );
@@ -126,11 +142,17 @@ class CalendarPage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _buildLegendItem(context, AppTheme.safeColor, 'Present'),
-                      const SizedBox(width: 24),
+                      const SizedBox(width: 16),
                       _buildLegendItem(
                         context,
                         AppTheme.criticalColor,
                         'Absent',
+                      ),
+                      const SizedBox(width: 16),
+                      _buildLegendItem(
+                        context,
+                        AppTheme.warningColor,
+                        'Cancelled',
                       ),
                     ],
                   ),
@@ -145,15 +167,16 @@ class CalendarPage extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            AttendanceUtils.formatDateLong(
-                              controller.selectedDate.value,
-                            ),
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
+                          Expanded(
+                            child: Text(
+                              AttendanceUtils.formatDateLong(
+                                controller.selectedDate.value,
+                              ),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                          const Spacer(),
                           if (controller.recordsForDate.isNotEmpty)
                             Text(
                               '${controller.recordsForDate.length} classes',
@@ -163,6 +186,15 @@ class CalendarPage extends StatelessWidget {
                                 ),
                               ),
                             ),
+                          const SizedBox(width: 12),
+                          TextButton.icon(
+                            onPressed: () => Get.toNamed(
+                              AppRoutes.editAttendance,
+                              arguments: controller.selectedDate.value,
+                            ),
+                            icon: const Icon(Icons.edit_rounded, size: 18),
+                            label: const Text('Edit'),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 12),
@@ -230,7 +262,25 @@ class CalendarPage extends StatelessWidget {
   ) {
     final theme = Theme.of(context);
     final subject = storage.getSubject(record.subjectId);
-    final isPresent = record.isPresent;
+
+    // Determine status color and text
+    Color statusColor;
+    IconData statusIcon;
+    String statusText;
+
+    if (record.isPresent) {
+      statusColor = AppTheme.safeColor;
+      statusIcon = Icons.check;
+      statusText = 'Present';
+    } else if (record.isCancelled) {
+      statusColor = AppTheme.warningColor;
+      statusIcon = Icons.event_busy;
+      statusText = 'Cancelled';
+    } else {
+      statusColor = AppTheme.criticalColor;
+      statusIcon = Icons.close;
+      statusText = 'Absent';
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -239,14 +289,10 @@ class CalendarPage extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: (isPresent ? AppTheme.safeColor : AppTheme.criticalColor)
-                .withValues(alpha: 0.15),
+            color: statusColor.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(
-            isPresent ? Icons.check : Icons.close,
-            color: isPresent ? AppTheme.safeColor : AppTheme.criticalColor,
-          ),
+          child: Icon(statusIcon, color: statusColor),
         ),
         title: Text(
           subject?.name ?? 'Unknown Subject',
@@ -257,14 +303,13 @@ class CalendarPage extends StatelessWidget {
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: (isPresent ? AppTheme.safeColor : AppTheme.criticalColor)
-                .withValues(alpha: 0.1),
+            color: statusColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            isPresent ? 'Present' : 'Absent',
+            statusText,
             style: TextStyle(
-              color: isPresent ? AppTheme.safeColor : AppTheme.criticalColor,
+              color: statusColor,
               fontWeight: FontWeight.w600,
               fontSize: 12,
             ),

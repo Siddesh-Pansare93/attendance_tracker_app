@@ -7,6 +7,7 @@ import 'package:smart_attendance_app/features/setup/pages/setup_timetable_page.d
 import 'package:smart_attendance_app/features/attendance/pages/today_attendance_page.dart';
 import 'package:smart_attendance_app/features/attendance/pages/subject_detail_page.dart';
 import 'package:smart_attendance_app/features/attendance/pages/add_subject_page.dart';
+import 'package:smart_attendance_app/features/attendance/pages/edit_attendance_page.dart';
 import 'package:smart_attendance_app/features/timetable/pages/timetable_page.dart';
 import 'package:smart_attendance_app/features/timetable/pages/add_timetable_entry_page.dart';
 import 'package:smart_attendance_app/features/calendar/pages/calendar_page.dart';
@@ -35,6 +36,7 @@ class AppRoutes {
   static const String editSubject = '/subject/edit/:id';
   static const String addTimetableEntry = '/timetable/add';
   static const String editTimetableEntry = '/timetable/edit/:id';
+  static const String editAttendance = '/attendance/edit';
 
   /// All app pages/routes
   static final List<GetPage> pages = [
@@ -86,6 +88,13 @@ class AppRoutes {
       name: settings,
       page: () => const SettingsPage(),
       transition: Transition.fadeIn,
+    ),
+
+    // Edit attendance for any date
+    GetPage(
+      name: editAttendance,
+      page: () => const EditAttendancePage(),
+      transition: Transition.rightToLeft,
     ),
 
     // Subject screens - ADD/EDIT routes must come before parameterized route

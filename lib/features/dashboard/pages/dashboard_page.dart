@@ -18,45 +18,31 @@ class DashboardPage extends StatelessWidget {
     final controller = Get.find<DashboardController>();
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Dashboard'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+      ),
       body: Obx(() {
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        return RefreshIndicator(
-          onRefresh: controller.refreshData,
-          child: CustomScrollView(
-            slivers: [
-              // App bar
-              SliverAppBar(
-                expandedHeight: 200,
-                floating: false,
-                pinned: true,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: _buildOverallCard(context, controller),
-                ),
-                title: const Text('Dashboard'),
-              ),
+        return Column(
+          children: [
+            // Fixed analytics header
+            _buildOverallCard(context, controller),
 
-              // Content
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Today's classes section
-                      _buildTodaySection(context, controller),
-                      const SizedBox(height: 24),
+            // Fixed Today's classes section
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: _buildTodaySection(context, controller),
+            ),
 
-                      // Subjects section
-                      _buildSubjectsSection(context, controller),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+            const SizedBox(height: 16),
+
+            // Subjects section with scrollable list
+            Expanded(child: _buildSubjectsSection(context, controller)),
+          ],
         );
       }),
     );
@@ -73,7 +59,7 @@ class DashboardPage extends StatelessWidget {
       color: AppTheme.primaryColor,
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.only(bottom: 20, left: 20, right: 20),
           child: Row(
             children: [
               // Circular indicator
@@ -315,40 +301,45 @@ class DashboardPage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Your Subjects',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Your Subjects',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            IconButton(
-              onPressed: () => Get.toNamed(AppRoutes.addSubject),
-              icon: const Icon(Icons.add_circle_outline),
-            ),
-          ],
+              IconButton(
+                onPressed: () => Get.toNamed(AppRoutes.addSubject),
+                icon: const Icon(Icons.add_circle_outline),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 12),
 
-        Obx(() {
-          if (controller.subjects.isEmpty) {
-            return NoSubjectsEmpty(
-              onAdd: () => Get.toNamed(AppRoutes.addSubject),
+        Expanded(
+          child: Obx(() {
+            if (controller.subjects.isEmpty) {
+              return Center(
+                child: NoSubjectsEmpty(
+                  onAdd: () => Get.toNamed(AppRoutes.addSubject),
+                ),
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: controller.subjects.length,
+              itemBuilder: (context, index) {
+                final subject = controller.subjects[index];
+                return _buildSubjectCard(context, subject, controller);
+              },
             );
-          }
-
-          return ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: controller.subjects.length,
-            itemBuilder: (context, index) {
-              final subject = controller.subjects[index];
-              return _buildSubjectCard(context, subject, controller);
-            },
-          );
-        }),
+          }),
+        ),
       ],
     );
   }
