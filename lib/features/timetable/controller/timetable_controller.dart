@@ -1,13 +1,19 @@
 import 'package:get/get.dart';
 import 'package:uuid/uuid.dart';
-import 'package:smart_attendance_app/core/services/storage_service.dart';
+import 'package:smart_attendance_app/core/repositories/subject_repository.dart';
+import 'package:smart_attendance_app/core/repositories/timetable_repository.dart';
 import 'package:smart_attendance_app/core/constants/app_constants.dart';
 import 'package:smart_attendance_app/features/attendance/data/model/subject_model.dart';
 import 'package:smart_attendance_app/features/timetable/data/model/timetable_entry_model.dart';
 
 /// Controller for timetable management
+///
+/// REFACTORED: Now uses injected repositories instead of StorageService singleton
 class TimetableController extends GetxController {
-  final StorageService _storage = StorageService.instance;
+  // Dependencies - using Get.find() to get injected repositories
+  SubjectRepository get _subjectRepo => Get.find<SubjectRepository>();
+  TimetableRepository get _timetableRepo => Get.find<TimetableRepository>();
+
   final _uuid = const Uuid();
 
   // Observable state
@@ -29,8 +35,8 @@ class TimetableController extends GetxController {
   Future<void> loadTimetable() async {
     isLoading.value = true;
     try {
-      allEntries.value = _storage.getAllTimetableEntries();
-      subjects.value = _storage.getAllSubjects();
+      allEntries.value = _timetableRepo.getAll();
+      subjects.value = _subjectRepo.getAll();
       _filterEntriesForDay();
     } finally {
       isLoading.value = false;
@@ -49,7 +55,7 @@ class TimetableController extends GetxController {
     try {
       return subjects.firstWhere((s) => s.id == id);
     } catch (e) {
-      return _storage.getSubject(id);
+      return _subjectRepo.getById(id);
     }
   }
 
@@ -92,19 +98,19 @@ class TimetableController extends GetxController {
       endTime: endTime,
       type: type,
     );
-    await _storage.saveTimetableEntry(entry);
+    await _timetableRepo.save(entry);
     await loadTimetable();
   }
 
   /// Update an existing entry
   Future<void> updateEntry(TimetableEntry entry) async {
-    await _storage.saveTimetableEntry(entry);
+    await _timetableRepo.save(entry);
     await loadTimetable();
   }
 
   /// Delete an entry
   Future<void> deleteEntry(String id) async {
-    await _storage.deleteTimetableEntry(id);
+    await _timetableRepo.delete(id);
     await loadTimetable();
   }
 
@@ -113,7 +119,7 @@ class TimetableController extends GetxController {
     try {
       return allEntries.firstWhere((e) => e.id == id);
     } catch (e) {
-      return _storage.getTimetableEntry(id);
+      return _timetableRepo.getById(id);
     }
   }
 

@@ -1,10 +1,13 @@
 import 'package:get/get.dart';
-import 'package:smart_attendance_app/core/services/storage_service.dart';
+import 'package:smart_attendance_app/core/repositories/attendance_repository.dart';
 import 'package:smart_attendance_app/features/attendance/data/model/attendance_record_model.dart';
 
 /// Controller for the calendar view
+///
+/// REFACTORED: Uses injected repositories
 class CalendarController extends GetxController {
-  final StorageService _storage = StorageService.instance;
+  // Dependency - using Get.find() to get injected repository
+  AttendanceRepository get _attendanceRepo => Get.find<AttendanceRepository>();
 
   // Observable state
   final selectedDate = DateTime.now().obs;
@@ -28,7 +31,7 @@ class CalendarController extends GetxController {
   Future<void> loadRecords() async {
     isLoading.value = true;
     try {
-      allRecords.value = _storage.getAllAttendanceRecords();
+      allRecords.value = _attendanceRepo.getAll();
       _buildRecordsByDate();
       _loadRecordsForDate();
     } finally {

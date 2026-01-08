@@ -2,33 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_attendance_app/core/theme/app_theme.dart';
 import 'package:smart_attendance_app/core/utils/attendance_utils.dart';
+import 'package:smart_attendance_app/core/routes/app_routes.dart';
 import 'package:smart_attendance_app/common/widgets/attendance_indicator.dart';
 import 'package:smart_attendance_app/common/widgets/empty_state.dart';
 import 'package:smart_attendance_app/features/attendance/controller/attendance_controller.dart';
 import 'package:smart_attendance_app/features/attendance/data/model/attendance_record_model.dart';
 
 /// Page showing detailed information about a subject
-class SubjectDetailPage extends StatefulWidget {
+///
+/// REFACTORED: Now a StatelessWidget
+/// - Was StatefulWidget unnecessarily
+/// - Now properly uses GetX reactive patterns
+/// - Follows SRP - UI only handles presentation
+class SubjectDetailPage extends StatelessWidget {
   const SubjectDetailPage({super.key});
 
   @override
-  State<SubjectDetailPage> createState() => _SubjectDetailPageState();
-}
-
-class _SubjectDetailPageState extends State<SubjectDetailPage> {
-  late final String subjectId;
-
-  @override
-  void initState() {
-    super.initState();
-    subjectId = Get.parameters['id'] ?? '';
-    Get.find<AttendanceController>().loadSubjectDetail(subjectId);
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final subjectId = Get.parameters['id'] ?? '';
     final controller = Get.find<AttendanceController>();
     final theme = Theme.of(context);
+
+    // Load subject detail when page opens
+    controller.loadSubjectDetail(subjectId);
 
     return Scaffold(
       appBar: AppBar(
@@ -37,7 +33,8 @@ class _SubjectDetailPageState extends State<SubjectDetailPage> {
         ),
         actions: [
           PopupMenuButton<String>(
-            onSelected: (value) => _handleMenuAction(value, controller),
+            onSelected: (value) =>
+                _handleMenuAction(value, controller, subjectId, context),
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: 'edit',
@@ -331,18 +328,27 @@ class _SubjectDetailPageState extends State<SubjectDetailPage> {
         false;
   }
 
-  void _handleMenuAction(String action, AttendanceController controller) {
+  void _handleMenuAction(
+    String action,
+    AttendanceController controller,
+    String subjectId,
+    BuildContext context,
+  ) {
     switch (action) {
       case 'edit':
-        Get.toNamed('/subject/edit/$subjectId');
+        Get.toNamed(AppRoutes.editSubject.replaceAll(':id', subjectId));
         break;
       case 'delete':
-        _showDeleteConfirmation(controller);
+        _showDeleteConfirmation(controller, subjectId, context);
         break;
     }
   }
 
-  void _showDeleteConfirmation(AttendanceController controller) {
+  void _showDeleteConfirmation(
+    AttendanceController controller,
+    String subjectId,
+    BuildContext context,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:smart_attendance_app/core/services/storage_service.dart';
+import 'package:smart_attendance_app/core/repositories/subject_repository.dart';
+import 'package:smart_attendance_app/core/repositories/timetable_repository.dart';
+import 'package:smart_attendance_app/core/repositories/attendance_repository.dart';
+import 'package:smart_attendance_app/core/repositories/settings_repository.dart';
 import 'package:smart_attendance_app/core/constants/app_constants.dart';
 
 /// Controller for app settings
+///
+/// REFACTORED: Uses injected repositories
 class SettingsController extends GetxController {
-  final StorageService _storage = StorageService.instance;
+  // Dependencies - using Get.find() to get injected repositories
+  SubjectRepository get _subjectRepo => Get.find<SubjectRepository>();
+  TimetableRepository get _timetableRepo => Get.find<TimetableRepository>();
+  AttendanceRepository get _attendanceRepo => Get.find<AttendanceRepository>();
+  SettingsRepository get _settingsRepo => Get.find<SettingsRepository>();
 
   // Observable state
   final threshold = kDefaultAttendanceThreshold.obs;
@@ -21,27 +30,27 @@ class SettingsController extends GetxController {
 
   /// Load all settings
   void loadSettings() {
-    threshold.value = _storage.getAttendanceThreshold();
-    notificationsEnabled.value = _storage.getNotificationsEnabled();
-    isDarkMode.value = _storage.isDarkMode();
+    threshold.value = _settingsRepo.getAttendanceThreshold();
+    notificationsEnabled.value = _settingsRepo.getNotificationsEnabled();
+    isDarkMode.value = _settingsRepo.isDarkMode();
   }
 
   /// Update attendance threshold
   Future<void> updateThreshold(double value) async {
     threshold.value = value;
-    await _storage.setAttendanceThreshold(value);
+    await _settingsRepo.setAttendanceThreshold(value);
   }
 
   /// Toggle notifications
   Future<void> toggleNotifications(bool enabled) async {
     notificationsEnabled.value = enabled;
-    await _storage.setNotificationsEnabled(enabled);
+    await _settingsRepo.setNotificationsEnabled(enabled);
   }
 
   /// Toggle dark mode
   Future<void> toggleDarkMode(bool enabled) async {
     isDarkMode.value = enabled;
-    await _storage.setDarkMode(enabled);
+    await _settingsRepo.setDarkMode(enabled);
     Get.changeThemeMode(enabled ? ThemeMode.dark : ThemeMode.light);
   }
 
@@ -49,7 +58,7 @@ class SettingsController extends GetxController {
   Future<void> resetAllData() async {
     isLoading.value = true;
     try {
-      await _storage.resetAllData();
+      await _settingsRepo.resetAll();
       // Navigate to welcome screen
       Get.offAllNamed('/welcome');
     } finally {
@@ -59,9 +68,9 @@ class SettingsController extends GetxController {
 
   /// Get total statistics
   Map<String, dynamic> getStatistics() {
-    final subjects = _storage.getAllSubjects();
-    final records = _storage.getAllAttendanceRecords();
-    final timetable = _storage.getAllTimetableEntries();
+    final subjects = _subjectRepo.getAll();
+    final records = _attendanceRepo.getAll();
+    final timetable = _timetableRepo.getAll();
 
     int totalClasses = 0;
     int totalAttended = 0;

@@ -2,60 +2,39 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_attendance_app/core/constants/app_constants.dart';
 import 'package:smart_attendance_app/features/timetable/controller/timetable_controller.dart';
+import 'package:smart_attendance_app/features/timetable/controller/add_timetable_entry_controller.dart';
 
 /// Page for adding or editing a timetable entry
-/// Simplified to just select subject and day - no timing or type needed
-class AddTimetableEntryPage extends StatefulWidget {
+///
+/// REFACTORED: Now a StatelessWidget using AddTimetableEntryController
+/// - No more setState() - uses GetX reactive state (.obs)
+/// - Form state moved to AddTimetableEntryController
+/// - Follows SRP - UI only handles presentation
+class AddTimetableEntryPage extends StatelessWidget {
   final bool isEdit;
 
   const AddTimetableEntryPage({super.key, this.isEdit = false});
 
   @override
-  State<AddTimetableEntryPage> createState() => _AddTimetableEntryPageState();
-}
-
-class _AddTimetableEntryPageState extends State<AddTimetableEntryPage> {
-  final _formKey = GlobalKey<FormState>();
-
-  String? _selectedSubjectId;
-  int _selectedDay = 1; // Monday
-
-  late String? _editId;
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final controller = Get.find<TimetableController>();
-    _selectedDay = controller.selectedDay.value;
-
-    if (widget.isEdit) {
-      _editId = Get.parameters['id'];
-      _loadExistingData();
-    }
-  }
-
-  void _loadExistingData() {
-    if (_editId == null) return;
-    final controller = Get.find<TimetableController>();
-    final entry = controller.getEntry(_editId!);
-    if (entry != null) {
-      setState(() {
-        _selectedSubjectId = entry.subjectId;
-        _selectedDay = entry.dayOfWeek;
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final controller = Get.find<TimetableController>();
+    // Create controller for this page
+    final controller = Get.put(AddTimetableEntryController());
+    final timetableController = Get.find<TimetableController>();
+
+    // Initialize for edit mode if needed
+    if (isEdit) {
+      final editId = Get.parameters['id'];
+      if (editId != null) {
+        controller.initForEdit(editId);
+      }
+    }
+
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.isEdit ? 'Edit Entry' : 'Add Class')),
+      appBar: AppBar(title: Text(isEdit ? 'Edit Entry' : 'Add Class')),
       body: Obx(() {
-        final subjects = controller.subjects;
+        final subjects = timetableController.subjects;
 
         if (subjects.isEmpty) {
           return Center(
@@ -87,14 +66,13 @@ class _AddTimetableEntryPageState extends State<AddTimetableEntryPage> {
           );
         }
 
-        return Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // Subject dropdown
-              DropdownButtonFormField<String>(
-                initialValue: _selectedSubjectId,
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // Subject dropdown - reactive to selectedSubjectId
+            Obx(
+              () => DropdownButtonFormField<String>(
+                initialValue: controller.selectedSubjectId.value,
                 decoration: const InputDecoration(
                   labelText: 'Subject',
                   prefixIcon: Icon(Icons.book),
@@ -106,17 +84,19 @@ class _AddTimetableEntryPageState extends State<AddTimetableEntryPage> {
                   );
                 }).toList(),
                 onChanged: (value) =>
-                    setState(() => _selectedSubjectId = value),
+                    controller.selectedSubjectId.value = value,
                 validator: (value) {
                   if (value == null) return 'Please select a subject';
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+            ),
+            const SizedBox(height: 16),
 
-              // Day of week
-              DropdownButtonFormField<int>(
-                initialValue: _selectedDay,
+            // Day of week - reactive to selectedDay
+            Obx(
+              () => DropdownButtonFormField<int>(
+                initialValue: controller.selectedDay.value,
                 decoration: const InputDecoration(
                   labelText: 'Day of Week',
                   prefixIcon: Icon(Icons.calendar_today),
@@ -128,64 +108,33 @@ class _AddTimetableEntryPageState extends State<AddTimetableEntryPage> {
                   );
                 }),
                 onChanged: (value) {
-                  if (value != null) setState(() => _selectedDay = value);
+                  if (value != null) controller.selectedDay.value = value;
                 },
               ),
-              const SizedBox(height: 32),
+            ),
+            const SizedBox(height: 32),
 
-              // Save button
-              SizedBox(
+            // Save button - reactive to isLoading
+            Obx(
+              () => SizedBox(
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _saveEntry,
-                  child: _isLoading
+                  onPressed: controller.isLoading.value
+                      ? null
+                      : controller.saveEntry,
+                  child: controller.isLoading.value
                       ? const SizedBox(
                           width: 24,
                           height: 24,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Text(widget.isEdit ? 'Save Changes' : 'Add Class'),
+                      : Text(isEdit ? 'Save Changes' : 'Add Class'),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         );
       }),
     );
-  }
-
-  Future<void> _saveEntry() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      final controller = Get.find<TimetableController>();
-
-      if (widget.isEdit && _editId != null) {
-        await controller.deleteEntry(_editId!);
-      }
-
-      await controller.addEntry(
-        subjectId: _selectedSubjectId!,
-        dayOfWeek: _selectedDay,
-      );
-
-      Get.back();
-      Get.snackbar(
-        'Success',
-        widget.isEdit ? 'Class updated!' : 'Class added!',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
-      );
-    } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to save. Please try again.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
   }
 }

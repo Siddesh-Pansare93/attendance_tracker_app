@@ -1,74 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:smart_attendance_app/features/attendance/controller/attendance_controller.dart';
+import 'package:smart_attendance_app/features/attendance/controller/add_subject_controller.dart';
 
 /// Page for adding or editing a subject
-class AddSubjectPage extends StatefulWidget {
+///
+/// REFACTORED: Now a StatelessWidget using AddSubjectController
+/// - No more setState() - uses GetX reactive state
+/// - Form controllers moved to AddSubjectController
+/// - Follows SRP - UI only handles presentation
+class AddSubjectPage extends StatelessWidget {
   final bool isEdit;
 
   const AddSubjectPage({super.key, this.isEdit = false});
 
   @override
-  State<AddSubjectPage> createState() => _AddSubjectPageState();
-}
-
-class _AddSubjectPageState extends State<AddSubjectPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _thresholdController = TextEditingController();
-
-  late String? _editId;
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.isEdit) {
-      _editId = Get.parameters['id'];
-      _loadExistingData();
-    } else {
-      // Set default threshold
-      final controller = Get.find<AttendanceController>();
-      _thresholdController.text = controller.threshold.value.toStringAsFixed(0);
-    }
-  }
-
-  void _loadExistingData() {
-    if (_editId == null) return;
-    final controller = Get.find<AttendanceController>();
-    final subject = controller.getSubject(_editId!);
-    if (subject != null) {
-      _nameController.text = subject.name;
-      _thresholdController.text = subject.minimumRequiredPercentage
-          .toStringAsFixed(0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _thresholdController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    // Create controller for this page
+    final controller = Get.put(AddSubjectController());
+
+    // Initialize for edit mode if needed
+    if (isEdit) {
+      final editId = Get.parameters['id'];
+      if (editId != null) {
+        controller.initForEdit(editId);
+      }
+    }
+
     final theme = Theme.of(context);
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        title: Text(widget.isEdit ? 'Edit Subject' : 'Add Subject'),
-      ),
+      appBar: AppBar(title: Text(isEdit ? 'Edit Subject' : 'Add Subject')),
       body: Form(
-        key: _formKey,
+        key: controller.formKey,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
               // Subject name
               TextFormField(
-                controller: _nameController,
+                controller: controller.nameController,
                 decoration: const InputDecoration(
                   labelText: 'Subject Name',
                   hintText: 'e.g., Mathematics, Physics',
@@ -86,7 +57,7 @@ class _AddSubjectPageState extends State<AddSubjectPage> {
 
               // Minimum attendance
               TextFormField(
-                controller: _thresholdController,
+                controller: controller.thresholdController,
                 decoration: const InputDecoration(
                   labelText: 'Minimum Required Attendance (%)',
                   hintText: 'e.g., 75',
@@ -134,18 +105,22 @@ class _AddSubjectPageState extends State<AddSubjectPage> {
               ),
               const SizedBox(height: 32),
 
-              // Save button
-              SizedBox(
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _saveSubject,
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(widget.isEdit ? 'Save Changes' : 'Add Subject'),
+              // Save button - reactive to isLoading
+              Obx(
+                () => SizedBox(
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: controller.isLoading.value
+                        ? null
+                        : controller.saveSubject,
+                    child: controller.isLoading.value
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(isEdit ? 'Save Changes' : 'Add Subject'),
+                  ),
                 ),
               ),
             ],
@@ -153,46 +128,5 @@ class _AddSubjectPageState extends State<AddSubjectPage> {
         ),
       ),
     );
-  }
-
-  Future<void> _saveSubject() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      final controller = Get.find<AttendanceController>();
-      final name = _nameController.text.trim();
-      final threshold = double.parse(_thresholdController.text);
-
-      if (widget.isEdit && _editId != null) {
-        // Update existing subject
-        final subject = controller.getSubject(_editId!);
-        if (subject != null) {
-          subject.name = name;
-          subject.minimumRequiredPercentage = threshold;
-          await controller.updateSubject(subject);
-        }
-      } else {
-        // Add new subject
-        await controller.addSubject(name, minPercentage: threshold);
-      }
-
-      Get.back();
-      Get.snackbar(
-        'Success',
-        widget.isEdit ? 'Subject updated!' : 'Subject added!',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
-      );
-    } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to save subject. Please try again.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
   }
 }

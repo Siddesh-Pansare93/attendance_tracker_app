@@ -1,6 +1,9 @@
 import 'package:get/get.dart';
 import 'package:uuid/uuid.dart';
-import 'package:smart_attendance_app/core/services/storage_service.dart';
+import 'package:smart_attendance_app/core/repositories/subject_repository.dart';
+import 'package:smart_attendance_app/core/repositories/timetable_repository.dart';
+import 'package:smart_attendance_app/core/repositories/attendance_repository.dart';
+import 'package:smart_attendance_app/core/repositories/settings_repository.dart';
 import 'package:smart_attendance_app/core/utils/attendance_utils.dart';
 import 'package:smart_attendance_app/features/attendance/data/model/subject_model.dart';
 import 'package:smart_attendance_app/features/attendance/data/model/attendance_record_model.dart';
@@ -8,15 +11,22 @@ import 'package:smart_attendance_app/features/timetable/data/model/timetable_ent
 import 'package:smart_attendance_app/features/dashboard/controller/dashboard_controller.dart';
 
 /// Controller for attendance marking and subject management
+///
+/// REFACTORED: Now uses injected repositories instead of StorageService singleton
+/// This follows Dependency Inversion Principle (DIP) and Single Responsibility Principle (SRP)
 class AttendanceController extends GetxController {
-  final StorageService _storage = StorageService.instance;
+  // Dependencies - using Get.find() to get injected repositories
+  SubjectRepository get _subjectRepo => Get.find<SubjectRepository>();
+  TimetableRepository get _timetableRepo => Get.find<TimetableRepository>();
+  AttendanceRepository get _attendanceRepo => Get.find<AttendanceRepository>();
+  SettingsRepository get _settingsRepo => Get.find<SettingsRepository>();
+
   final _uuid = const Uuid();
 
   // Observable state
   final subjects = <Subject>[].obs;
   final todayClasses = <TimetableEntry>[].obs;
-  final todayRecords =
-      <String, AttendanceRecord>{}.obs; // timetableEntryId -> record
+  final todayRecords = <String, AttendanceRecord>{}.obs; // entryId -> record
   final selectedSubject = Rxn<Subject>();
   final subjectHistory = <AttendanceRecord>[].obs;
   final isLoading = true.obs;
@@ -32,22 +42,21 @@ class AttendanceController extends GetxController {
   Future<void> loadTodayClasses() async {
     isLoading.value = true;
     try {
-      // Load threshold
-      threshold.value = _storage.getAttendanceThreshold();
+      // Load threshold from settings repository
+      threshold.value = _settingsRepo.getAttendanceThreshold();
 
-      // Load subjects
-      subjects.value = _storage.getAllSubjects();
+      // Load subjects from repository
+      subjects.value = _subjectRepo.getAll();
 
-      // Load today's timetable entries
+      // Load today's timetable entries from repository
       final today = AttendanceUtils.getCurrentDayOfWeek();
-      todayClasses.value = _storage.getTimetableForDay(today);
+      todayClasses.value = _timetableRepo.getByDay(today);
 
-      // Load today's attendance records - keyed by timetableEntryId or subjectId for backwards compat
+      // Load today's attendance records
       final todayStr = AttendanceUtils.getTodayString();
-      final records = _storage.getAttendanceForDate(todayStr);
+      final records = _attendanceRepo.getByDate(todayStr);
       todayRecords.clear();
       for (final record in records) {
-        // Use timetableEntryId as key if available, otherwise fall back to subjectId
         final key = record.timetableEntryId ?? record.subjectId;
         todayRecords[key] = record;
       }
@@ -61,7 +70,7 @@ class AttendanceController extends GetxController {
     try {
       return subjects.firstWhere((s) => s.id == id);
     } catch (e) {
-      return _storage.getSubject(id);
+      return _subjectRepo.getById(id);
     }
   }
 
@@ -76,7 +85,6 @@ class AttendanceController extends GetxController {
   }
 
   /// Mark attendance for a specific timetable entry today
-  /// Now tracks by timetableEntryId to support multiple lectures of same subject
   /// Status can be: 'present', 'absent', or 'cancelled'
   Future<void> markAttendance(
     String subjectId,
@@ -87,40 +95,33 @@ class AttendanceController extends GetxController {
     final subject = getSubject(subjectId);
     if (subject == null) return;
 
-    // Use timetableEntryId as key if provided, otherwise fall back to subjectId
     final recordKey = timetableEntryId ?? subjectId;
-
-    // Check if already marked
     final existingRecord = todayRecords[recordKey];
 
     if (existingRecord != null) {
       // Update existing record
       final oldStatus = existingRecord.status;
       existingRecord.status = status;
-      await _storage.saveAttendanceRecord(existingRecord);
+      await _attendanceRepo.save(existingRecord);
 
       // Update subject counts based on status changes
       if (oldStatus != status) {
-        // Handle old status
         if (oldStatus == 'present') {
           subject.attendedClasses -= 1;
         }
         if (oldStatus != 'cancelled') {
           subject.totalClasses -= 1;
         }
-
-        // Handle new status
         if (status == 'present') {
           subject.attendedClasses += 1;
         }
         if (status != 'cancelled') {
           subject.totalClasses += 1;
         }
-
-        await _storage.saveSubject(subject);
+        await _subjectRepo.save(subject);
       }
     } else {
-      // Create new record with timetableEntryId
+      // Create new record
       final record = AttendanceRecord(
         id: _uuid.v4(),
         subjectId: subjectId,
@@ -128,7 +129,7 @@ class AttendanceController extends GetxController {
         status: status,
         timetableEntryId: timetableEntryId,
       );
-      await _storage.saveAttendanceRecord(record);
+      await _attendanceRepo.save(record);
       todayRecords[recordKey] = record;
 
       // Update subject counts (cancelled doesn't count towards total)
@@ -137,26 +138,24 @@ class AttendanceController extends GetxController {
         if (status == 'present') {
           subject.attendedClasses += 1;
         }
-        await _storage.saveSubject(subject);
+        await _subjectRepo.save(subject);
       }
     }
 
     // Refresh subjects list
-    subjects.value = _storage.getAllSubjects();
+    subjects.value = _subjectRepo.getAll();
 
-    // Also refresh dashboard if it's registered
-    if (Get.isRegistered<DashboardController>()) {
-      Get.find<DashboardController>().loadData();
-    }
+    // Notify dashboard to refresh
+    _notifyDashboard();
   }
 
   /// Load subject detail with history
   Future<void> loadSubjectDetail(String subjectId) async {
     isLoading.value = true;
     try {
-      threshold.value = _storage.getAttendanceThreshold();
-      selectedSubject.value = _storage.getSubject(subjectId);
-      subjectHistory.value = _storage.getAttendanceForSubject(subjectId);
+      threshold.value = _settingsRepo.getAttendanceThreshold();
+      selectedSubject.value = _subjectRepo.getById(subjectId);
+      subjectHistory.value = _attendanceRepo.getBySubjectId(subjectId);
     } finally {
       isLoading.value = false;
     }
@@ -171,39 +170,35 @@ class AttendanceController extends GetxController {
       name: name.trim(),
       minimumRequiredPercentage: minPercentage ?? threshold.value,
     );
-    await _storage.saveSubject(subject);
-    subjects.value = _storage.getAllSubjects();
-
-    // Refresh dashboard
-    if (Get.isRegistered<DashboardController>()) {
-      Get.find<DashboardController>().loadData();
-    }
+    await _subjectRepo.save(subject);
+    subjects.value = _subjectRepo.getAll();
+    _notifyDashboard();
   }
 
   /// Update an existing subject
   Future<void> updateSubject(Subject subject) async {
-    await _storage.saveSubject(subject);
-    subjects.value = _storage.getAllSubjects();
+    await _subjectRepo.save(subject);
+    subjects.value = _subjectRepo.getAll();
     if (selectedSubject.value?.id == subject.id) {
       selectedSubject.value = subject;
     }
-    // Refresh dashboard
-    if (Get.isRegistered<DashboardController>()) {
-      Get.find<DashboardController>().loadData();
-    }
+    _notifyDashboard();
   }
 
   /// Delete a subject and all related data
   Future<void> deleteSubject(String id) async {
-    await _storage.deleteSubject(id);
-    subjects.value = _storage.getAllSubjects();
+    // Delete related timetable entries
+    await _timetableRepo.deleteBySubjectId(id);
+    // Delete related attendance records
+    await _attendanceRepo.deleteBySubjectId(id);
+    // Delete the subject
+    await _subjectRepo.delete(id);
+
+    subjects.value = _subjectRepo.getAll();
     if (selectedSubject.value?.id == id) {
       selectedSubject.value = null;
     }
-    // Refresh dashboard
-    if (Get.isRegistered<DashboardController>()) {
-      Get.find<DashboardController>().loadData();
-    }
+    _notifyDashboard();
   }
 
   /// Delete an attendance record
@@ -215,15 +210,15 @@ class AttendanceController extends GetxController {
       if (record.isPresent) {
         subject.attendedClasses -= 1;
       }
-      await _storage.saveSubject(subject);
+      await _subjectRepo.save(subject);
     }
 
     // Delete record
-    await _storage.deleteAttendanceRecord(record.id);
+    await _attendanceRepo.delete(record.id);
 
     // Refresh data
-    subjectHistory.value = _storage.getAttendanceForSubject(record.subjectId);
-    subjects.value = _storage.getAllSubjects();
+    subjectHistory.value = _attendanceRepo.getBySubjectId(record.subjectId);
+    subjects.value = _subjectRepo.getAll();
 
     // Remove from today's records if applicable
     final todayStr = AttendanceUtils.getTodayString();
@@ -232,7 +227,11 @@ class AttendanceController extends GetxController {
       todayRecords.remove(key);
     }
 
-    // Refresh dashboard
+    _notifyDashboard();
+  }
+
+  /// Notify dashboard to refresh - using reactive approach
+  void _notifyDashboard() {
     if (Get.isRegistered<DashboardController>()) {
       Get.find<DashboardController>().loadData();
     }

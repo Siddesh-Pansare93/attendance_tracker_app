@@ -2,166 +2,95 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_attendance_app/core/theme/app_theme.dart';
 import 'package:smart_attendance_app/core/utils/attendance_utils.dart';
-import 'package:smart_attendance_app/core/services/storage_service.dart';
-import 'package:smart_attendance_app/features/attendance/data/model/attendance_record_model.dart';
-import 'package:smart_attendance_app/features/attendance/data/model/subject_model.dart';
+import 'package:smart_attendance_app/common/widgets/attendance_status_badge.dart';
+import 'package:smart_attendance_app/common/widgets/attendance_action_buttons.dart';
+import 'package:smart_attendance_app/features/attendance/controller/edit_attendance_controller.dart';
 import 'package:smart_attendance_app/features/timetable/data/model/timetable_entry_model.dart';
-import 'package:uuid/uuid.dart';
 
 /// Page for editing attendance on any date
-class EditAttendancePage extends StatefulWidget {
+///
+/// REFACTORED: Now a StatelessWidget using EditAttendanceController
+/// - No more setState() - uses GetX reactive state
+/// - Business logic moved to EditAttendanceController
+/// - Uses reusable widgets (AttendanceStatusBadge, AttendanceActionButtons)
+/// - Follows SRP - UI only handles presentation
+class EditAttendancePage extends StatelessWidget {
   const EditAttendancePage({super.key});
 
   @override
-  State<EditAttendancePage> createState() => _EditAttendancePageState();
-}
-
-class _EditAttendancePageState extends State<EditAttendancePage> {
-  final _storage = StorageService.instance;
-  final _uuid = const Uuid();
-
-  late DateTime _date;
-  List<TimetableEntry> _entries = [];
-  List<AttendanceRecord> _records = [];
-  List<Subject> _subjects = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _date = Get.arguments as DateTime? ?? DateTime.now();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-
-    final dayOfWeek = _date.weekday % 7; // Convert to 0-6 (Sun-Sat)
-    _entries = _storage
-        .getAllTimetableEntries()
-        .where((e) => e.dayOfWeek == dayOfWeek)
-        .toList();
-
-    _subjects = _storage.getAllSubjects();
-
-    final dateStr = AttendanceUtils.formatDateForStorage(_date);
-    _records = _storage.getAttendanceForDate(dateStr);
-
-    setState(() => _isLoading = false);
-  }
-
-  String? _getRecordStatus(String entryId) {
-    try {
-      final record = _records.firstWhere((r) => r.timetableEntryId == entryId);
-      return record.status;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<void> _markAttendance(TimetableEntry entry, String status) async {
-    final dateStr = AttendanceUtils.formatDateForStorage(_date);
-    final subject = _subjects.firstWhere((s) => s.id == entry.subjectId);
-
-    // Find existing record
-    AttendanceRecord? existingRecord;
-    try {
-      existingRecord = _records.firstWhere(
-        (r) => r.timetableEntryId == entry.id,
-      );
-    } catch (_) {}
-
-    if (existingRecord != null) {
-      // Update existing
-      final oldStatus = existingRecord.status;
-      existingRecord.status = status;
-      await _storage.saveAttendanceRecord(existingRecord);
-
-      // Update subject counts
-      if (oldStatus != status) {
-        if (oldStatus == 'present') subject.attendedClasses -= 1;
-        if (oldStatus != 'cancelled') subject.totalClasses -= 1;
-        if (status == 'present') subject.attendedClasses += 1;
-        if (status != 'cancelled') subject.totalClasses += 1;
-        await _storage.saveSubject(subject);
-      }
-    } else {
-      // Create new
-      final record = AttendanceRecord(
-        id: _uuid.v4(),
-        subjectId: entry.subjectId,
-        date: dateStr,
-        status: status,
-        timetableEntryId: entry.id,
-      );
-      await _storage.saveAttendanceRecord(record);
-
-      if (status != 'cancelled') {
-        subject.totalClasses += 1;
-        if (status == 'present') subject.attendedClasses += 1;
-        await _storage.saveSubject(subject);
-      }
-    }
-
-    await _loadData();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    // Create controller for this page
+    final controller = Get.put(EditAttendanceController());
+
+    // Initialize with date from arguments
+    final date = Get.arguments as DateTime? ?? DateTime.now();
+    controller.initWithDate(date);
+
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(title: Text(AttendanceUtils.formatDateLong(_date))),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _entries.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.event_busy,
-                    size: 64,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+      appBar: AppBar(title: Text(AttendanceUtils.formatDateLong(date))),
+      body: Obx(() {
+        if (controller.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (controller.entries.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.event_busy,
+                  size: 64,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No classes scheduled',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No classes scheduled',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                    ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'on ${AttendanceUtils.formatDateLong(date)}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'on ${AttendanceUtils.formatDateLong(_date)}',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _entries.length,
-              itemBuilder: (context, index) =>
-                  _buildClassCard(context, _entries[index], isDark),
+                ),
+              ],
             ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: controller.entries.length,
+          itemBuilder: (context, index) => _buildClassCard(
+            context,
+            controller.entries[index],
+            controller,
+            isDark,
+          ),
+        );
+      }),
     );
   }
 
   Widget _buildClassCard(
     BuildContext context,
     TimetableEntry entry,
+    EditAttendanceController controller,
     bool isDark,
   ) {
     final theme = Theme.of(context);
-    final subject = _subjects.firstWhere(
-      (s) => s.id == entry.subjectId,
-      orElse: () => Subject(id: '', name: 'Unknown'),
-    );
-    final status = _getRecordStatus(entry.id);
+    final subject = controller.getSubject(entry.subjectId);
+    if (subject == null) {
+      return const SizedBox.shrink();
+    }
+    final status = controller.getRecordStatus(entry.id);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -226,169 +155,30 @@ class _EditAttendancePageState extends State<EditAttendancePage> {
             ),
             const SizedBox(height: 20),
 
-            // Status buttons or marked status
+            // Status or action buttons - now using reusable widgets!
             if (status != null)
-              _buildMarkedStatus(context, status, entry)
+              AttendanceStatusBadge(
+                status: status,
+                onChangePressed: () =>
+                    _showChangeDialog(context, entry, controller, status),
+              )
             else
-              _buildActionButtons(context, entry),
+              AttendanceActionButtons(
+                onPresent: () => controller.markAttendance(entry, 'present'),
+                onAbsent: () => controller.markAttendance(entry, 'absent'),
+                onCancelled: () =>
+                    controller.markAttendance(entry, 'cancelled'),
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, TimetableEntry entry) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatusButton(
-                context,
-                entry,
-                'absent',
-                'Absent',
-                Icons.close_rounded,
-                AppTheme.criticalColor,
-                filled: false,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _buildStatusButton(
-                context,
-                entry,
-                'present',
-                'Present',
-                Icons.check_rounded,
-                AppTheme.safeColor,
-                filled: true,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        _buildStatusButton(
-          context,
-          entry,
-          'cancelled',
-          'Lecture Cancelled',
-          Icons.event_busy_rounded,
-          AppTheme.warningColor,
-          filled: false,
-          fullWidth: true,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatusButton(
-    BuildContext context,
-    TimetableEntry entry,
-    String status,
-    String label,
-    IconData icon,
-    Color color, {
-    bool filled = false,
-    bool fullWidth = false,
-  }) {
-    return SizedBox(
-      width: fullWidth ? double.infinity : null,
-      height: 48,
-      child: filled
-          ? ElevatedButton.icon(
-              onPressed: () => _markAttendance(entry, status),
-              icon: Icon(icon, size: 20),
-              label: Text(label),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: color,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            )
-          : OutlinedButton.icon(
-              onPressed: () => _markAttendance(entry, status),
-              icon: Icon(icon, size: 20),
-              label: Text(label),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: color,
-                side: BorderSide(color: color),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-    );
-  }
-
-  Widget _buildMarkedStatus(
-    BuildContext context,
-    String status,
-    TimetableEntry entry,
-  ) {
-    final theme = Theme.of(context);
-
-    Color statusColor;
-    IconData statusIcon;
-    String statusText;
-
-    switch (status) {
-      case 'present':
-        statusColor = AppTheme.safeColor;
-        statusIcon = Icons.check_circle;
-        statusText = 'Marked Present';
-        break;
-      case 'cancelled':
-        statusColor = AppTheme.warningColor;
-        statusIcon = Icons.event_busy;
-        statusText = 'Lecture Cancelled';
-        break;
-      default:
-        statusColor = AppTheme.criticalColor;
-        statusIcon = Icons.cancel;
-        statusText = 'Marked Absent';
-    }
-
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: statusColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(statusIcon, color: statusColor, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                statusText,
-                style: TextStyle(
-                  color: statusColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const Spacer(),
-        TextButton(
-          onPressed: () => _showChangeDialog(context, entry, status),
-          child: Text(
-            'Change',
-            style: TextStyle(color: theme.colorScheme.primary),
-          ),
-        ),
-      ],
-    );
-  }
-
   void _showChangeDialog(
     BuildContext context,
     TimetableEntry entry,
+    EditAttendanceController controller,
     String currentStatus,
   ) {
     showDialog(
@@ -404,7 +194,7 @@ class _EditAttendancePageState extends State<EditAttendancePage> {
           if (currentStatus != 'absent')
             TextButton(
               onPressed: () {
-                _markAttendance(entry, 'absent');
+                controller.markAttendance(entry, 'absent');
                 Navigator.pop(context);
               },
               child: Text(
@@ -415,7 +205,7 @@ class _EditAttendancePageState extends State<EditAttendancePage> {
           if (currentStatus != 'present')
             ElevatedButton(
               onPressed: () {
-                _markAttendance(entry, 'present');
+                controller.markAttendance(entry, 'present');
                 Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
@@ -426,7 +216,7 @@ class _EditAttendancePageState extends State<EditAttendancePage> {
           if (currentStatus != 'cancelled')
             TextButton(
               onPressed: () {
-                _markAttendance(entry, 'cancelled');
+                controller.markAttendance(entry, 'cancelled');
                 Navigator.pop(context);
               },
               child: Text(

@@ -9,20 +9,19 @@ import 'package:smart_attendance_app/features/dashboard/controller/dashboard_con
 import 'package:smart_attendance_app/features/attendance/controller/attendance_controller.dart';
 import 'package:smart_attendance_app/features/timetable/controller/timetable_controller.dart';
 import 'package:smart_attendance_app/features/calendar/controller/calendar_controller.dart';
-import 'package:smart_attendance_app/features/settings/controller/settings_controller.dart';
 
 /// Main home page with bottom navigation
-class HomePage extends StatefulWidget {
+///
+/// REFACTORED:
+/// - Removed Get.put() calls from initState()
+/// - Controllers are now registered in InitialBinding at app startup
+/// - Uses GetX reactive state for current index instead of setState
+/// - Follows DIP - depends on abstractions, not concretions
+class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  int _currentIndex = 0;
-
-  final List<Widget> _pages = const [
+  // Pages in the bottom navigation
+  static const List<Widget> _pages = [
     DashboardPage(),
     TodayAttendancePage(),
     TimetablePage(),
@@ -31,59 +30,53 @@ class _HomePageState extends State<HomePage> {
   ];
 
   @override
-  void initState() {
-    super.initState();
-    // Initialize all controllers
-    Get.put(DashboardController());
-    Get.put(AttendanceController());
-    Get.put(TimetableController());
-    Get.put(CalendarController());
-    Get.put(SettingsController());
-  }
-
-  @override
   Widget build(BuildContext context) {
+    // Use a simple reactive variable for tab index
+    final currentIndex = 0.obs;
+
     return Scaffold(
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        child: _pages[_currentIndex],
+      body: Obx(
+        () => AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: _pages[currentIndex.value],
+        ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-          // Refresh data when switching tabs
-          _refreshCurrentTab(index);
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.today_outlined),
-            selectedIcon: Icon(Icons.today),
-            label: 'Today',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.schedule_outlined),
-            selectedIcon: Icon(Icons.schedule),
-            label: 'Timetable',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month),
-            label: 'Calendar',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
+      bottomNavigationBar: Obx(
+        () => NavigationBar(
+          selectedIndex: currentIndex.value,
+          onDestinationSelected: (index) {
+            currentIndex.value = index;
+            // Refresh data when switching tabs
+            _refreshCurrentTab(index);
+          },
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.dashboard_outlined),
+              selectedIcon: Icon(Icons.dashboard),
+              label: 'Home',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.today_outlined),
+              selectedIcon: Icon(Icons.today),
+              label: 'Today',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.schedule_outlined),
+              selectedIcon: Icon(Icons.schedule),
+              label: 'Timetable',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.calendar_month_outlined),
+              selectedIcon: Icon(Icons.calendar_month),
+              label: 'Calendar',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.settings_outlined),
+              selectedIcon: Icon(Icons.settings),
+              label: 'Settings',
+            ),
+          ],
+        ),
       ),
     );
   }

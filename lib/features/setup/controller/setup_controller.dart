@@ -1,13 +1,21 @@
 import 'package:get/get.dart';
 import 'package:uuid/uuid.dart';
-import 'package:smart_attendance_app/core/services/storage_service.dart';
+import 'package:smart_attendance_app/core/repositories/subject_repository.dart';
+import 'package:smart_attendance_app/core/repositories/timetable_repository.dart';
+import 'package:smart_attendance_app/core/repositories/settings_repository.dart';
 import 'package:smart_attendance_app/core/constants/app_constants.dart';
 import 'package:smart_attendance_app/features/attendance/data/model/subject_model.dart';
 import 'package:smart_attendance_app/features/timetable/data/model/timetable_entry_model.dart';
 
 /// Controller for the first-time setup flow
+///
+/// REFACTORED: Uses injected repositories
 class SetupController extends GetxController {
-  final StorageService _storage = StorageService.instance;
+  // Dependencies - using Get.find() to get injected repositories
+  SubjectRepository get _subjectRepo => Get.find<SubjectRepository>();
+  TimetableRepository get _timetableRepo => Get.find<TimetableRepository>();
+  SettingsRepository get _settingsRepo => Get.find<SettingsRepository>();
+
   final _uuid = const Uuid();
 
   // Observable state
@@ -72,20 +80,20 @@ class SetupController extends GetxController {
     isLoading.value = true;
     try {
       // Save threshold
-      await _storage.setAttendanceThreshold(threshold.value);
+      await _settingsRepo.setAttendanceThreshold(threshold.value);
 
       // Save all subjects
       for (final subject in subjects) {
-        await _storage.saveSubject(subject);
+        await _subjectRepo.save(subject);
       }
 
       // Save all timetable entries
       for (final entry in timetableEntries) {
-        await _storage.saveTimetableEntry(entry);
+        await _timetableRepo.save(entry);
       }
 
       // Mark setup as complete
-      await _storage.setSetupComplete(true);
+      await _settingsRepo.setSetupComplete(true);
 
       // Navigate to home
       Get.offAllNamed('/home');
@@ -96,7 +104,7 @@ class SetupController extends GetxController {
 
   /// Skip setup (for users who want to configure later)
   Future<void> skipSetup() async {
-    await _storage.setSetupComplete(true);
+    await _settingsRepo.setSetupComplete(true);
     Get.offAllNamed('/home');
   }
 
