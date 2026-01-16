@@ -2,21 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_attendance_app/core/routes/app_routes.dart';
 import 'package:smart_attendance_app/core/constants/app_constants.dart';
+import 'package:smart_attendance_app/core/theme/app_theme.dart';
 import 'package:smart_attendance_app/common/widgets/empty_state.dart';
 import 'package:smart_attendance_app/features/timetable/controller/timetable_controller.dart';
 import 'package:smart_attendance_app/features/timetable/data/model/timetable_entry_model.dart';
 
-/// Page displaying weekly timetable - simplified to just show subjects per day
+/// Modern timetable page with clean design
 class TimetablePage extends StatelessWidget {
   const TimetablePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<TimetableController>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: isDark ? AppTheme.darkBgPrimary : AppTheme.bgPrimary,
       appBar: AppBar(
-        title: const Text('Timetable'),
+        title: const Text('Weekly Schedule'),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
         actions: [
           IconButton(
             onPressed: () => controller.loadTimetable(),
@@ -24,9 +29,10 @@ class TimetablePage extends StatelessWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Get.toNamed(AppRoutes.addTimetableEntry),
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add),
+        label: const Text('Add Class'),
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
@@ -36,13 +42,13 @@ class TimetablePage extends StatelessWidget {
         return Column(
           children: [
             // Day tabs
-            _buildDayTabs(context, controller),
+            _buildDayTabs(context, controller, isDark),
 
             // Entries for selected day
             Expanded(
               child: RefreshIndicator(
                 onRefresh: controller.loadTimetable,
-                child: _buildEntriesList(context, controller),
+                child: _buildEntriesList(context, controller, isDark),
               ),
             ),
           ],
@@ -51,12 +57,15 @@ class TimetablePage extends StatelessWidget {
     );
   }
 
-  Widget _buildDayTabs(BuildContext context, TimetableController controller) {
-    final theme = Theme.of(context);
-
+  Widget _buildDayTabs(
+    BuildContext context,
+    TimetableController controller,
+    bool isDark,
+  ) {
     return Container(
-      height: 70,
+      height: 80,
       padding: const EdgeInsets.symmetric(vertical: 8),
+      color: isDark ? AppTheme.darkBgPrimary : AppTheme.bgPrimary,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -71,45 +80,43 @@ class TimetablePage extends StatelessWidget {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: GestureDetector(
-                onTap: () {
-                  controller.selectedDay.value = day;
-                },
+                onTap: () => controller.selectedDay.value = day,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   width: 70,
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? theme.colorScheme.primary
-                        : theme.cardColor,
-                    borderRadius: BorderRadius.circular(16),
+                        ? AppTheme.primaryColor
+                        : (isDark
+                              ? AppTheme.darkSurfaceDefault
+                              : AppTheme.surfaceDefault),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isSelected
-                          ? theme.colorScheme.primary
-                          : theme.dividerColor,
+                          ? AppTheme.primaryColor
+                          : (isDark
+                                ? AppTheme.darkBorderSubtle
+                                : AppTheme.borderSubtle),
                     ),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.max,
                     children: [
-                      // Day name with fixed height
-                      SizedBox(
-                        height: 20,
-                        child: Text(
-                          kShortDayNames[day],
-                          style: TextStyle(
-                            color: isSelected
-                                ? Colors.white
-                                : theme.colorScheme.onSurface,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
+                      Text(
+                        kShortDayNames[day],
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.white
+                              : (isDark
+                                    ? AppTheme.darkTextSecondary
+                                    : AppTheme.textSecondary),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
                         ),
                       ),
-                      // Class count badge with fixed position
+                      const SizedBox(height: 4),
                       if (hasClasses)
                         Container(
-                          margin: const EdgeInsets.only(top: 4),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 6,
                             vertical: 2,
@@ -117,28 +124,19 @@ class TimetablePage extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? Colors.white.withValues(alpha: 0.2)
-                                : theme.colorScheme.primary.withValues(
-                                    alpha: 0.1,
-                                  ),
-                            borderRadius: BorderRadius.circular(8),
+                                : AppTheme.primaryColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             '$classCount',
                             style: TextStyle(
                               color: isSelected
                                   ? Colors.white
-                                  : theme.colorScheme.primary,
+                                  : AppTheme.primaryColor,
                               fontSize: 11,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        )
-                      else
-                        // Empty space to maintain consistent alignment
-                        Container(
-                          margin: const EdgeInsets.only(top: 4),
-                          height: 18,
-                          width: 28,
                         ),
                     ],
                   ),
@@ -154,6 +152,7 @@ class TimetablePage extends StatelessWidget {
   Widget _buildEntriesList(
     BuildContext context,
     TimetableController controller,
+    bool isDark,
   ) {
     return Obx(() {
       final entries = controller.entriesForDay;
@@ -165,11 +164,11 @@ class TimetablePage extends StatelessWidget {
       }
 
       return ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         itemCount: entries.length,
         itemBuilder: (context, index) {
           final entry = entries[index];
-          return _buildEntryCard(context, entry, controller);
+          return _buildEntryCard(context, entry, controller, isDark);
         },
       );
     });
@@ -179,10 +178,10 @@ class TimetablePage extends StatelessWidget {
     BuildContext context,
     TimetableEntry entry,
     TimetableController controller,
+    bool isDark,
   ) {
     final theme = Theme.of(context);
     final subjectName = controller.getSubjectName(entry.subjectId);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Dismissible(
       key: Key(entry.id),
@@ -190,63 +189,86 @@ class TimetablePage extends StatelessWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
-          color: Colors.red.withValues(alpha: 0.9),
-          borderRadius: BorderRadius.circular(16),
+          color: AppTheme.criticalColor,
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: const Icon(Icons.delete_rounded, color: Colors.white, size: 24),
+        child: const Icon(Icons.delete_outline, color: Colors.white, size: 22),
       ),
       confirmDismiss: (direction) => _confirmDelete(context),
       onDismissed: (direction) => controller.deleteEntry(entry.id),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF161622) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: isDark ? AppTheme.darkSurfaceDefault : AppTheme.surfaceDefault,
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isDark ? const Color(0xFF2A2A3C) : const Color(0xFFE2E8F0),
+            color: isDark ? AppTheme.darkBorderSubtle : AppTheme.borderSubtle,
           ),
         ),
+        padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            // Subject icon
+            // Icon
             Container(
-              width: 52,
-              height: 52,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(14),
+                color: isDark
+                    ? AppTheme.primaryColor.withValues(alpha: 0.15)
+                    : AppTheme.primarySoft,
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
-                Icons.book_rounded,
-                color: theme.colorScheme.primary,
-                size: 26,
+              child: const Icon(
+                Icons.schedule_outlined,
+                color: AppTheme.primaryColor,
+                size: 22,
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
 
             // Subject info
             Expanded(
-              child: Text(
-                subjectName,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    subjectName,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: isDark
+                          ? AppTheme.darkTextPrimary
+                          : AppTheme.textPrimary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${entry.startTime} - ${entry.endTime} (${entry.type})',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: isDark
+                          ? AppTheme.darkTextMuted
+                          : AppTheme.textMuted,
+                    ),
+                  ),
+                ],
               ),
             ),
 
             // Delete button
             IconButton(
               icon: Icon(
-                Icons.delete_outline_rounded,
-                color: theme.colorScheme.error.withValues(alpha: 0.7),
+                Icons.delete_outline,
+                color: AppTheme.criticalColor.withValues(alpha: 0.7),
+                size: 20,
               ),
               onPressed: () async {
                 final confirm = await _confirmDelete(context);
                 if (confirm) controller.deleteEntry(entry.id);
               },
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
             ),
           ],
         ),
@@ -255,9 +277,16 @@ class TimetablePage extends StatelessWidget {
   }
 
   Future<bool> _confirmDelete(BuildContext context) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
+            backgroundColor: isDark
+                ? AppTheme.darkSurfaceDefault
+                : AppTheme.surfaceDefault,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             title: const Text('Delete Class'),
             content: const Text(
               'Are you sure you want to remove this class from the timetable?',
@@ -269,7 +298,9 @@ class TimetablePage extends StatelessWidget {
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.criticalColor,
+                ),
                 child: const Text('Delete'),
               ),
             ],
