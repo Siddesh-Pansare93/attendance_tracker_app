@@ -362,140 +362,143 @@ class DashboardPage extends StatelessWidget {
     DashboardController controller,
   ) {
     final theme = Theme.of(context);
-    String? selectedSubjectId;
-    DateTime selectedDate = DateTime.now();
-    String? selectedStatus;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Extra Lecture'),
-        content: StatefulBuilder(
+      builder: (context) {
+        String? selectedSubjectId;
+        DateTime selectedDate = DateTime.now();
+        String? selectedStatus;
+
+        return StatefulBuilder(
           builder: (context, setState) {
-            return SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Subject dropdown
-                  Text(
-                    'Subject',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+            return AlertDialog(
+              title: const Text('Add Extra Lecture'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Subject dropdown
+                    Text(
+                      'Subject',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Obx(
-                    () => DropdownButton<String>(
-                      isExpanded: true,
-                      hint: const Text('Select Subject'),
-                      value: selectedSubjectId,
-                      items: controller.subjects.map((s) {
-                        return DropdownMenuItem(
-                          value: s.id,
-                          child: Text(s.name),
+                    const SizedBox(height: 8),
+                    Obx(
+                      () => DropdownButton<String>(
+                        isExpanded: true,
+                        hint: const Text('Select Subject'),
+                        value: selectedSubjectId,
+                        items: controller.subjects.map((s) {
+                          return DropdownMenuItem(
+                            value: s.id,
+                            child: Text(s.name),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() => selectedSubjectId = value);
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Date picker
+                    Text(
+                      'Date',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2100),
                         );
-                      }).toList(),
+                        if (date != null) {
+                          setState(() => selectedDate = date);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          AttendanceUtils.formatDateForDisplay(selectedDate),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Status dropdown
+                    Text(
+                      'Status',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButton<String>(
+                      isExpanded: true,
+                      hint: const Text('Select Status'),
+                      value: selectedStatus,
+                      items: const [
+                        DropdownMenuItem(value: 'present', child: Text('Present')),
+                        DropdownMenuItem(value: 'absent', child: Text('Absent')),
+                        DropdownMenuItem(
+                          value: 'cancelled',
+                          child: Text('Cancelled'),
+                        ),
+                      ],
                       onChanged: (value) {
-                        setState(() => selectedSubjectId = value);
+                        setState(() => selectedStatus = value);
                       },
                     ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Date picker
-                  Text(
-                    'Date',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: selectedDate,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2100),
-                      );
-                      if (date != null) {
-                        setState(() => selectedDate = date);
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        AttendanceUtils.formatDateForDisplay(selectedDate),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Status dropdown
-                  Text(
-                    'Status',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButton<String>(
-                    isExpanded: true,
-                    hint: const Text('Select Status'),
-                    value: selectedStatus,
-                    items: const [
-                      DropdownMenuItem(value: 'present', child: Text('Present')),
-                      DropdownMenuItem(value: 'absent', child: Text('Absent')),
-                      DropdownMenuItem(
-                        value: 'cancelled',
-                        child: Text('Cancelled'),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setState(() => selectedStatus = value);
-                    },
-                  ),
-                ],
+                  ],
+                ),
               ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: selectedSubjectId != null && selectedStatus != null
+                      ? () {
+                          final dateStr =
+                              AttendanceUtils.formatDateForStorage(selectedDate);
+                          controller.addExtraLecture(
+                            selectedSubjectId!,
+                            dateStr,
+                            selectedStatus!,
+                          );
+                          Navigator.pop(context);
+                          Get.snackbar(
+                            'Success',
+                            'Extra lecture added!',
+                            snackPosition: SnackPosition.BOTTOM,
+                            duration: const Duration(seconds: 2),
+                          );
+                        }
+                      : null,
+                  child: const Text('Add'),
+                ),
+              ],
             );
           },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: selectedSubjectId != null && selectedStatus != null
-                ? () {
-                    final dateStr =
-                        AttendanceUtils.formatDateForStorage(selectedDate);
-                    controller.addExtraLecture(
-                      selectedSubjectId!,
-                      dateStr,
-                      selectedStatus!,
-                    );
-                    Navigator.pop(context);
-                    Get.snackbar(
-                      'Success',
-                      'Extra lecture added!',
-                      snackPosition: SnackPosition.BOTTOM,
-                      duration: const Duration(seconds: 2),
-                    );
-                  }
-                : null,
-            child: const Text('Add'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

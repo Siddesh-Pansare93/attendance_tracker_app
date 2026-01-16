@@ -5,7 +5,6 @@ import 'package:smart_attendance_app/core/utils/attendance_utils.dart';
 import 'package:smart_attendance_app/common/widgets/empty_state.dart';
 import 'package:smart_attendance_app/features/attendance/controller/attendance_controller.dart';
 import 'package:smart_attendance_app/features/dashboard/controller/dashboard_controller.dart';
-import 'package:smart_attendance_app/features/timetable/data/model/timetable_entry_model.dart';
 
 /// Page for marking today's attendance
 class TodayAttendancePage extends StatelessWidget {
@@ -14,7 +13,6 @@ class TodayAttendancePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<AttendanceController>();
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -50,20 +48,6 @@ class TodayAttendancePage extends StatelessWidget {
 
               // Analytics section
               _buildAnalyticsSection(context),
-              const SizedBox(height: 24),
-
-              // Classes list
-              Text(
-                'Mark Your Attendance',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              ...controller.todayClasses.map(
-                (entry) => _buildClassCard(context, entry, controller),
-              ),
             ],
           ),
         );
@@ -184,337 +168,6 @@ class TodayAttendancePage extends StatelessWidget {
     );
   }
 
-  Widget _buildClassCard(
-    BuildContext context,
-    TimetableEntry entry,
-    AttendanceController controller,
-  ) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final subject = controller.getSubject(entry.subjectId);
-    if (subject == null) return const SizedBox.shrink();
-
-    // Use entry.id for tracking individual lecture instances
-    final isMarked = controller.isMarkedToday(entry.id);
-    final status = controller.getTodayStatus(entry.id);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF161622) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? const Color(0xFF2A2A3C) : const Color(0xFFE2E8F0),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header row with icon
-            Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    Icons.book_rounded,
-                    color: theme.colorScheme.primary,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        subject.name,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        '${subject.attendedClasses}/${subject.totalClasses} classes',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Attendance percentage badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.getStatusColor(
-                      subject.attendancePercentage,
-                      controller.threshold.value,
-                    ).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    '${subject.attendancePercentage.toStringAsFixed(1)}%',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: AppTheme.getStatusColor(
-                        subject.attendancePercentage,
-                        controller.threshold.value,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            // Action buttons - pass both subjectId AND entryId
-            if (isMarked)
-              _buildMarkedStatus(
-                context,
-                status!,
-                controller,
-                entry.subjectId,
-                entry.id,
-              )
-            else
-              _buildActionButtons(
-                context,
-                controller,
-                entry.subjectId,
-                entry.id,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(
-    BuildContext context,
-    AttendanceController controller,
-    String subjectId,
-    String entryId,
-  ) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => controller.markAttendance(
-                  subjectId,
-                  'absent',
-                  timetableEntryId: entryId,
-                ),
-                icon: const Icon(Icons.close, size: 18),
-                label: const Text('Absent'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.criticalColor,
-                  side: const BorderSide(color: AppTheme.criticalColor),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => controller.markAttendance(
-                  subjectId,
-                  'present',
-                  timetableEntryId: entryId,
-                ),
-                icon: const Icon(Icons.check, size: 18),
-                label: const Text('Present'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.safeColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () => controller.markAttendance(
-              subjectId,
-              'cancelled',
-              timetableEntryId: entryId,
-            ),
-            icon: const Icon(Icons.event_busy, size: 18),
-            label: const Text('Lecture Cancelled'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.warningColor,
-              side: const BorderSide(color: AppTheme.warningColor),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMarkedStatus(
-    BuildContext context,
-    String status,
-    AttendanceController controller,
-    String subjectId,
-    String entryId,
-  ) {
-    final theme = Theme.of(context);
-
-    Color statusColor;
-    IconData statusIcon;
-    String statusText;
-
-    switch (status) {
-      case 'present':
-        statusColor = AppTheme.safeColor;
-        statusIcon = Icons.check_circle;
-        statusText = 'Marked Present';
-        break;
-      case 'cancelled':
-        statusColor = AppTheme.warningColor;
-        statusIcon = Icons.event_busy;
-        statusText = 'Lecture Cancelled';
-        break;
-      default:
-        statusColor = AppTheme.criticalColor;
-        statusIcon = Icons.cancel;
-        statusText = 'Marked Absent';
-    }
-
-    return Row(
-      children: [
-        // Status indicator
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: statusColor.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(statusIcon, color: statusColor, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                statusText,
-                style: TextStyle(
-                  color: statusColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const Spacer(),
-        // Change button
-        TextButton(
-          onPressed: () => _showChangeDialog(
-            context,
-            controller,
-            subjectId,
-            entryId,
-            status,
-          ),
-          child: Text(
-            'Change',
-            style: TextStyle(color: theme.colorScheme.primary),
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showChangeDialog(
-    BuildContext context,
-    AttendanceController controller,
-    String subjectId,
-    String entryId,
-    String currentStatus,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Change Attendance'),
-        content: const Text('Select new attendance status:'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          if (currentStatus != 'absent')
-            TextButton(
-              onPressed: () {
-                controller.markAttendance(
-                  subjectId,
-                  'absent',
-                  timetableEntryId: entryId,
-                );
-                Navigator.pop(context);
-              },
-              child: Text(
-                'Absent',
-                style: TextStyle(color: AppTheme.criticalColor),
-              ),
-            ),
-          if (currentStatus != 'present')
-            ElevatedButton(
-              onPressed: () {
-                controller.markAttendance(
-                  subjectId,
-                  'present',
-                  timetableEntryId: entryId,
-                );
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.safeColor,
-              ),
-              child: const Text('Present'),
-            ),
-          if (currentStatus != 'cancelled')
-            TextButton(
-              onPressed: () {
-                controller.markAttendance(
-                  subjectId,
-                  'cancelled',
-                  timetableEntryId: entryId,
-                );
-                Navigator.pop(context);
-              },
-              child: Text(
-                'Cancelled',
-                style: TextStyle(color: AppTheme.warningColor),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
 
   /// Analytics section with filters
   Widget _buildAnalyticsSection(BuildContext context) {
@@ -577,27 +230,85 @@ class TodayAttendancePage extends StatelessWidget {
 
                 // Overall percentage card
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: theme.colorScheme.primary,
+                    gradient: LinearGradient(
+                      colors: [
+                        theme.colorScheme.primary.withValues(alpha: 0.8),
+                        theme.colorScheme.primary.withValues(alpha: 0.6),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
-                  child: Column(
+                  child: Row(
                     children: [
-                      Text(
-                        'Overall Attendance',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      // Circular progress indicator
+                      SizedBox(
+                        width: 80,
+                        height: 80,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            CircularProgressIndicator(
+                              value: (analytics['overallPercentage'] as double) / 100,
+                              strokeWidth: 8,
+                              backgroundColor: Colors.white.withValues(alpha: 0.3),
+                              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '${(analytics['overallPercentage'] as double).toStringAsFixed(1)}%',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${(analytics['overallPercentage'] as double).toStringAsFixed(1)}%',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      const SizedBox(width: 20),
+                      // Text info
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.analytics, color: Colors.white, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Overall Attendance',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Based on selected period',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.8),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -676,24 +387,71 @@ class TodayAttendancePage extends StatelessWidget {
     VoidCallback onTap,
   ) {
     final theme = Theme.of(context);
+    IconData icon;
+    
+    switch (label) {
+      case 'Weekly':
+        icon = Icons.date_range;
+        break;
+      case 'Monthly':
+        icon = Icons.calendar_month;
+        break;
+      case 'Custom':
+        icon = Icons.calendar_today;
+        break;
+      default:
+        icon = Icons.calendar_today;
+    }
+    
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: isSelected
-              ? theme.colorScheme.primary
-              : theme.colorScheme.primary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
+          gradient: isSelected
+              ? LinearGradient(
+                  colors: [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.primary.withValues(alpha: 0.8),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: isSelected ? null : theme.colorScheme.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: isSelected ? Colors.white : theme.colorScheme.primary,
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-          ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -706,19 +464,51 @@ class TodayAttendancePage extends StatelessWidget {
     Color color,
   ) {
     final theme = Theme.of(context);
+    IconData icon;
+    
+    switch (label) {
+      case 'Classes':
+        icon = Icons.class_;
+        break;
+      case 'Present':
+        icon = Icons.check_circle;
+        break;
+      case 'Absent':
+        icon = Icons.cancel;
+        break;
+      default:
+        icon = Icons.info;
+    }
+    
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        gradient: LinearGradient(
+          colors: [
+            color.withValues(alpha: 0.15),
+            color.withValues(alpha: 0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
           Text(
             value,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
               color: color,
             ),
@@ -727,7 +517,8 @@ class TodayAttendancePage extends StatelessWidget {
           Text(
             label,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -744,50 +535,112 @@ class TodayAttendancePage extends StatelessWidget {
     final classes = stats['classes'] ?? 0;
     final present = stats['present'] ?? 0;
     final percentage = classes > 0 ? (present / classes * 100) : 0.0;
+    final percentageColor = _getPercentageColor(percentage);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: theme.dividerColor,
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.surface,
+            percentageColor.withValues(alpha: 0.02),
+          ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
         ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  subjectName,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  '$present/$classes',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                ),
-              ],
-            ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: percentageColor.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: percentageColor.withValues(alpha: 0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: _getPercentageColor(percentage).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              '${percentage.toStringAsFixed(1)}%',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: _getPercentageColor(percentage),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // Subject icon
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: percentageColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.book,
+                  color: percentageColor,
+                  size: 20,
+                ),
               ),
+              const SizedBox(width: 12),
+              // Subject name and stats
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      subjectName,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$present/$classes classes',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Percentage badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      percentageColor,
+                      percentageColor.withValues(alpha: 0.8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: percentageColor.withValues(alpha: 0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  '${percentage.toStringAsFixed(1)}%',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Progress bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: classes > 0 ? (present / classes) : 0.0,
+              minHeight: 6,
+              backgroundColor: theme.dividerColor.withValues(alpha: 0.3),
+              valueColor: AlwaysStoppedAnimation<Color>(percentageColor),
             ),
           ),
         ],
