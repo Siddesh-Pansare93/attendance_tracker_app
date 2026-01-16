@@ -93,84 +93,79 @@ class EditAttendancePage extends StatelessWidget {
     final status = controller.getRecordStatus(entry.id);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF161622) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: isDark ? AppTheme.darkSurfaceDefault : AppTheme.surfaceDefault,
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: isDark ? const Color(0xFF2A2A3C) : const Color(0xFFE2E8F0),
+          color: isDark ? AppTheme.darkBorderSubtle : AppTheme.borderSubtle,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Subject header
-            Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    Icons.book_rounded,
-                    color: theme.colorScheme.primary,
-                    size: 24,
-                  ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Subject header
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        subject.name,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        '${subject.attendancePercentage.toStringAsFixed(1)}% attendance',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                child: const Icon(
+                  Icons.book,
+                  color: AppTheme.primaryColor,
+                  size: 20,
                 ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // Status or action buttons - now using reusable widgets!
-            if (status != null)
-              AttendanceStatusBadge(
-                status: status,
-                onChangePressed: () =>
-                    _showChangeDialog(context, entry, controller, status),
-              )
-            else
-              AttendanceActionButtons(
-                onPresent: () => controller.markAttendance(entry, 'present'),
-                onAbsent: () => controller.markAttendance(entry, 'absent'),
-                onCancelled: () =>
-                    controller.markAttendance(entry, 'cancelled'),
               ),
-          ],
-        ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      subject.name,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppTheme.darkTextPrimary
+                            : AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${subject.attendancePercentage.toStringAsFixed(1)}% attendance',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: isDark
+                            ? AppTheme.darkTextMuted
+                            : AppTheme.textMuted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Status or action buttons - now using reusable widgets!
+          if (status != null)
+            AttendanceStatusBadge(
+              status: status,
+              onChangePressed: () =>
+                  _showChangeDialog(context, entry, controller, status),
+            )
+          else
+            AttendanceActionButtons(
+              onPresent: () => controller.markAttendance(entry, 'present'),
+              onAbsent: () => controller.markAttendance(entry, 'absent'),
+              onCancelled: () => controller.markAttendance(entry, 'cancelled'),
+            ),
+        ],
       ),
     );
   }

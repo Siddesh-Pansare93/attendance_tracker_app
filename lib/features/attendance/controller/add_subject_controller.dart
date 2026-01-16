@@ -67,13 +67,16 @@ class AddSubjectController extends GetxController {
         await _attendanceController.addSubject(name, minPercentage: threshold);
       }
 
-      Get.back();
+      // Small delay to ensure data is persisted
+      await Future.delayed(const Duration(milliseconds: 500));
+
       Get.snackbar(
         'Success',
         isEdit.value ? 'Subject updated!' : 'Subject added!',
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 2),
       );
+      Get.back();
     } catch (e) {
       Get.snackbar(
         'Error',

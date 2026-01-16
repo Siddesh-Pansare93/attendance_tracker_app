@@ -86,48 +86,64 @@ class SubjectDetailPage extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             children: [
               // Main stats card
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    children: [
-                      // Circular indicator
-                      AttendanceIndicator(
-                        percentage: percentage,
-                        threshold: controller.threshold.value,
-                        size: 120,
-                      ),
-                      const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppTheme.darkSurfaceDefault
+                      : AppTheme.surfaceDefault,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppTheme.darkBorderSubtle
+                        : AppTheme.borderSubtle,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // Circular indicator
+                    AttendanceIndicator(
+                      percentage: percentage,
+                      threshold: controller.threshold.value,
+                      size: 120,
+                    ),
+                    const SizedBox(height: 20),
 
-                      // Status message
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
+                    // Status message
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.getStatusColor(
+                          percentage,
+                          controller.threshold.value,
+                        ).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
                           color: AppTheme.getStatusColor(
                             percentage,
                             controller.threshold.value,
-                          ).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          statusMessage,
-                          style: TextStyle(
-                            color: AppTheme.getStatusColor(
-                              percentage,
-                              controller.threshold.value,
-                            ),
-                            fontWeight: FontWeight.w600,
-                          ),
+                          ).withValues(alpha: 0.3),
                         ),
                       ),
-                    ],
-                  ),
+                      child: Text(
+                        statusMessage,
+                        style: TextStyle(
+                          color: AppTheme.getStatusColor(
+                            percentage,
+                            controller.threshold.value,
+                          ),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               // Stats row
               Row(
@@ -162,7 +178,7 @@ class SubjectDetailPage extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
 
               // History section
               Row(
@@ -172,12 +188,18 @@ class SubjectDetailPage extends StatelessWidget {
                     'Attendance History',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppTheme.darkTextPrimary
+                          : AppTheme.textPrimary,
                     ),
                   ),
                   Text(
                     '${controller.subjectHistory.length} records',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppTheme.darkTextMuted
+                          : AppTheme.textMuted,
+                      fontSize: 12,
                     ),
                   ),
                 ],
@@ -205,30 +227,47 @@ class SubjectDetailPage extends StatelessWidget {
     Color? color,
   ]) {
     final theme = Theme.of(context);
-    color ??= theme.colorScheme.primary;
+    final isDark = theme.brightness == Brightness.dark;
+    color ??= AppTheme.primaryColor;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-            ),
-          ],
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkSurfaceDefault : AppTheme.surfaceDefault,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppTheme.darkBorderSubtle : AppTheme.borderSubtle,
         ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: isDark ? AppTheme.darkTextMuted : AppTheme.textMuted,
+              fontWeight: FontWeight.w500,
+              fontSize: 12,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -239,8 +278,12 @@ class SubjectDetailPage extends StatelessWidget {
     AttendanceController controller,
   ) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final date = AttendanceUtils.parseDate(record.date);
     final isPresent = record.isPresent;
+    final statusColor = isPresent ? AppTheme.safeColor : AppTheme.criticalColor;
+    final statusLabel = isPresent ? 'Present' : 'Absent';
+    final statusIcon = isPresent ? Icons.check_circle : Icons.cancel;
 
     return Dismissible(
       key: Key(record.id),
@@ -249,54 +292,79 @@ class SubjectDetailPage extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 16),
         color: AppTheme.criticalColor,
-        child: const Icon(Icons.delete, color: Colors.white),
+        child: const Icon(Icons.delete, color: Colors.white, size: 20),
       ),
       confirmDismiss: (direction) => _confirmDelete(context),
       onDismissed: (direction) => controller.deleteAttendanceRecord(record),
-      child: Card(
+      child: Container(
         margin: const EdgeInsets.only(bottom: 8),
-        child: ListTile(
-          leading: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: (isPresent ? AppTheme.safeColor : AppTheme.criticalColor)
-                  .withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              isPresent ? Icons.check : Icons.close,
-              color: isPresent ? AppTheme.safeColor : AppTheme.criticalColor,
-            ),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.darkSurfaceDefault : AppTheme.surfaceDefault,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? AppTheme.darkBorderSubtle : AppTheme.borderSubtle,
           ),
-          title: Text(
-            AttendanceUtils.formatDateForDisplay(date),
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w500,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(statusIcon, color: statusColor, size: 20),
             ),
-          ),
-          subtitle: Text(
-            AttendanceUtils.formatDateLong(date),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-          trailing: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: (isPresent ? AppTheme.safeColor : AppTheme.criticalColor)
-                  .withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              isPresent ? 'Present' : 'Absent',
-              style: TextStyle(
-                color: isPresent ? AppTheme.safeColor : AppTheme.criticalColor,
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AttendanceUtils.formatDateForDisplay(date),
+                    style:
+                        (isDark
+                                ? theme.textTheme.bodyLarge
+                                : theme.textTheme.bodyLarge)
+                            ?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? AppTheme.darkTextPrimary
+                                  : AppTheme.textPrimary,
+                            ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    AttendanceUtils.formatDateLong(date),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: isDark
+                          ? AppTheme.darkTextMuted
+                          : AppTheme.textMuted,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+              ),
+              child: Text(
+                statusLabel,
+                style: TextStyle(
+                  color: statusColor,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

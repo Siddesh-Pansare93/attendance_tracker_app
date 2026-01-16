@@ -115,28 +115,28 @@ class DashboardPage extends StatelessWidget {
             color: isDark ? AppTheme.darkBorderSubtle : AppTheme.borderSubtle,
           ),
         ),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
             // Header
             Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 56,
+                  height: 56,
                   decoration: BoxDecoration(
                     color: isDark
-                        ? AppTheme.primaryColor.withValues(alpha: 0.2)
+                        ? AppTheme.primaryColor.withValues(alpha: 0.15)
                         : AppTheme.primarySoft,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
                     Icons.assessment_outlined,
                     color: AppTheme.primaryColor,
-                    size: 24,
+                    size: 28,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -147,15 +147,18 @@ class DashboardPage extends StatelessWidget {
                             ? AppTheme.darkTextSecondary
                             : AppTheme.textSecondary,
                         fontWeight: FontWeight.w500,
+                        fontSize: 13,
                       ),
                     ),
+                    const SizedBox(height: 6),
                     Obx(
                       () => Text(
                         '${controller.overallPercentage.value.toStringAsFixed(1)}%',
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
                               color: AppTheme.primaryColor,
+                              fontSize: 28,
                             ),
                       ),
                     ),
@@ -163,14 +166,14 @@ class DashboardPage extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
             // Progress bar
             Obx(
               () => ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
-                  minHeight: 6,
+                  minHeight: 8,
                   value: controller.overallPercentage.value / 100,
                   backgroundColor: isDark
                       ? AppTheme.darkBgSecondary
@@ -184,7 +187,7 @@ class DashboardPage extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
             // Stats row
             Obx(
@@ -228,21 +231,25 @@ class DashboardPage extends StatelessWidget {
     bool isDark, {
     Color? color,
   }) {
+    final finalColor = color ?? AppTheme.primaryColor;
+
     return Column(
       children: [
         Text(
           value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: color ?? AppTheme.primaryColor,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: finalColor,
+            fontSize: 24,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
           label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
             color: isDark ? AppTheme.darkTextMuted : AppTheme.textMuted,
             fontWeight: FontWeight.w500,
+            fontSize: 12,
           ),
         ),
       ],
@@ -322,30 +329,30 @@ class DashboardPage extends StatelessWidget {
             color: isDark ? AppTheme.darkBorderSubtle : AppTheme.borderSubtle,
           ),
         ),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             // Subject info
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Time indicator
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 52,
+                  height: 52,
                   decoration: BoxDecoration(
                     color: isDark
-                        ? AppTheme.primaryColor.withValues(alpha: 0.15)
+                        ? AppTheme.primaryColor.withValues(alpha: 0.12)
                         : AppTheme.primarySoft,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.schedule_outlined,
                     color: AppTheme.primaryColor,
-                    size: 20,
+                    size: 24,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,15 +364,17 @@ class DashboardPage extends StatelessWidget {
                           color: isDark
                               ? AppTheme.darkTextPrimary
                               : AppTheme.textPrimary,
+                          fontSize: 15,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(
                         '${entry.startTime} - ${entry.endTime}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: isDark
                               ? AppTheme.darkTextMuted
                               : AppTheme.textMuted,
+                          fontSize: 13,
                         ),
                       ),
                     ],
@@ -375,50 +384,60 @@ class DashboardPage extends StatelessWidget {
                 _buildStatusBadge(context, currentStatus, isDark),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
 
             // Action buttons
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildActionButton(
-                  context,
-                  'Present',
-                  Icons.check,
-                  AppTheme.safeColor,
-                  isMarking,
-                  () => controller.markAttendance(
-                    entry.subjectId,
-                    'present',
-                    timetableEntryId: entry.id,
+                Expanded(
+                  flex: 2,
+                  child: _buildActionButton(
+                    context,
+                    'Present',
+                    Icons.check,
+                    AppTheme.safeColor,
+                    isMarking,
+                    () => controller.markAttendance(
+                      entry.subjectId,
+                      'present',
+                      timetableEntryId: entry.id,
+                    ),
+                    isDark,
                   ),
-                  isDark,
                 ),
-                _buildActionButton(
-                  context,
-                  'Absent',
-                  Icons.close,
-                  AppTheme.criticalColor,
-                  isMarking,
-                  () => controller.markAttendance(
-                    entry.subjectId,
-                    'absent',
-                    timetableEntryId: entry.id,
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: _buildActionButton(
+                    context,
+                    'Absent',
+                    Icons.close,
+                    AppTheme.criticalColor,
+                    isMarking,
+                    () => controller.markAttendance(
+                      entry.subjectId,
+                      'absent',
+                      timetableEntryId: entry.id,
+                    ),
+                    isDark,
                   ),
-                  isDark,
                 ),
-                _buildActionButton(
-                  context,
-                  'Cancelled',
-                  Icons.event_busy_outlined,
-                  AppTheme.warningColor,
-                  isMarking,
-                  () => controller.markAttendance(
-                    entry.subjectId,
-                    'cancelled',
-                    timetableEntryId: entry.id,
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: _buildActionButton(
+                    context,
+                    'Cancelled',
+                    Icons.event_busy_outlined,
+                    AppTheme.warningColor,
+                    isMarking,
+                    () => controller.markAttendance(
+                      entry.subjectId,
+                      'cancelled',
+                      timetableEntryId: entry.id,
+                    ),
+                    isDark,
                   ),
-                  isDark,
                 ),
               ],
             ),
@@ -459,23 +478,25 @@ class DashboardPage extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: isDark
-            ? statusColor.withValues(alpha: 0.15)
+            ? statusColor.withValues(alpha: 0.12)
             : statusColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: statusColor.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(statusIcon, size: 16, color: statusColor),
+          Icon(statusIcon, size: 14, color: statusColor),
           const SizedBox(width: 4),
           Text(
             statusText,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: statusColor,
               fontWeight: FontWeight.w600,
+              fontSize: 11,
             ),
           ),
         ],
@@ -493,19 +514,20 @@ class DashboardPage extends StatelessWidget {
     VoidCallback onPressed,
     bool isDark,
   ) {
-    return Expanded(
-      child: OutlinedButton.icon(
-        onPressed: isLoading ? null : onPressed,
-        icon: Icon(icon, size: 18),
-        label: Text(label, style: const TextStyle(fontSize: 13)),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: color,
-          side: BorderSide(color: color.withValues(alpha: 0.5)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-        ),
+    return OutlinedButton.icon(
+      onPressed: isLoading ? null : onPressed,
+      icon: Icon(icon, size: 16),
+      label: Text(
+        label,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
       ),
-    ).paddingSymmetric(horizontal: 3);
+      style: OutlinedButton.styleFrom(
+        foregroundColor: color,
+        side: BorderSide(color: color.withValues(alpha: 0.6)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      ),
+    );
   }
 
   /// Show add extra lecture modal

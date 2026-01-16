@@ -70,9 +70,7 @@ class _SplashPageState extends State<SplashPage>
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF0A0A0F)
-          : const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? AppTheme.darkBgPrimary : AppTheme.bgPrimary,
       body: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
@@ -97,16 +95,7 @@ class _SplashPageState extends State<SplashPage>
                               height: 120,
                               decoration: BoxDecoration(
                                 color: AppTheme.primaryColor,
-                                borderRadius: BorderRadius.circular(32),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppTheme.primaryColor.withValues(
-                                      alpha: 0.3,
-                                    ),
-                                    blurRadius: 30,
-                                    offset: const Offset(0, 15),
-                                  ),
-                                ],
+                                borderRadius: BorderRadius.circular(20),
                               ),
                               child: const Icon(
                                 Icons.assignment_turned_in_rounded,
@@ -120,17 +109,19 @@ class _SplashPageState extends State<SplashPage>
                             Text(
                               'Attendance',
                               style: theme.textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: theme.colorScheme.onSurface,
-                                letterSpacing: -1,
+                                fontWeight: FontWeight.w700,
+                                color: isDark
+                                    ? AppTheme.darkTextPrimary
+                                    : AppTheme.textPrimary,
+                                letterSpacing: -0.5,
                               ),
                             ),
                             Text(
                               'Tracker',
                               style: theme.textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                                 color: AppTheme.primaryColor,
-                                letterSpacing: -1,
+                                letterSpacing: -0.5,
                               ),
                             ),
                             const SizedBox(height: 48),
@@ -142,7 +133,7 @@ class _SplashPageState extends State<SplashPage>
                               child: CircularProgressIndicator(
                                 strokeWidth: 2.5,
                                 valueColor: AlwaysStoppedAnimation(
-                                  AppTheme.primaryColor.withValues(alpha: 0.7),
+                                  AppTheme.primaryColor,
                                 ),
                               ),
                             ),
@@ -161,24 +152,24 @@ class _SplashPageState extends State<SplashPage>
                           Text(
                             'Made with ',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.5,
-                              ),
+                              color: isDark
+                                  ? AppTheme.darkTextMuted
+                                  : AppTheme.textMuted,
                             ),
                           ),
                           Icon(
                             Icons.favorite_rounded,
                             size: 14,
-                            color: const Color(
-                              0xFFEF4444,
-                            ).withValues(alpha: 0.8),
+                            color: AppTheme.criticalColor.withValues(
+                              alpha: 0.7,
+                            ),
                           ),
                           Text(
                             ' by Siddesh Pansare',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.5,
-                              ),
+                              color: isDark
+                                  ? AppTheme.darkTextMuted
+                                  : AppTheme.textMuted,
                             ),
                           ),
                         ],

@@ -20,50 +20,46 @@ class SettingsPage extends StatelessWidget {
         elevation: 0,
         backgroundColor: Colors.transparent,
       ),
-      body: Obx(() {
-        final stats = controller.getStatistics();
+      body: RefreshIndicator(
+        onRefresh: () => Future.value(null),
+        child: ListView(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          children: [
+            // Statistics section
+            _buildStatsCard(context, controller.getStatistics(), isDark),
+            const SizedBox(height: 24),
 
-        return RefreshIndicator(
-          onRefresh: () => Future.value(null),
-          child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            children: [
-              // Statistics section
-              _buildStatsCard(context, stats, isDark),
-              const SizedBox(height: 24),
+            // Appearance section
+            _buildSectionHeader(context, 'Appearance', isDark),
+            _buildAppearanceCard(context, controller, isDark),
+            const SizedBox(height: 24),
 
-              // Appearance section
-              _buildSectionHeader(context, 'Appearance', isDark),
-              _buildAppearanceCard(context, controller, isDark),
-              const SizedBox(height: 24),
+            // Attendance section
+            _buildSectionHeader(context, 'Attendance Settings', isDark),
+            _buildAttendanceCard(context, controller, isDark),
+            const SizedBox(height: 24),
 
-              // Attendance section
-              _buildSectionHeader(context, 'Attendance Settings', isDark),
-              _buildAttendanceCard(context, controller, isDark),
-              const SizedBox(height: 24),
+            // Notifications section
+            _buildSectionHeader(context, 'Notifications', isDark),
+            _buildNotificationsCard(context, controller, isDark),
+            const SizedBox(height: 24),
 
-              // Notifications section
-              _buildSectionHeader(context, 'Notifications', isDark),
-              _buildNotificationsCard(context, controller, isDark),
-              const SizedBox(height: 24),
+            // Data Management section
+            _buildSectionHeader(
+              context,
+              'Data Management',
+              isDark,
+              isWarning: true,
+            ),
+            _buildDataManagementCard(context, controller, isDark),
+            const SizedBox(height: 32),
 
-              // Data Management section
-              _buildSectionHeader(
-                context,
-                'Data Management',
-                isDark,
-                isWarning: true,
-              ),
-              _buildDataManagementCard(context, controller, isDark),
-              const SizedBox(height: 32),
-
-              // App info footer
-              _buildAppInfoFooter(context, isDark),
-              const SizedBox(height: 32),
-            ],
-          ),
-        );
-      }),
+            // App info footer
+            _buildAppInfoFooter(context, isDark),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
     );
   }
 

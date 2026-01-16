@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:smart_attendance_app/core/theme/app_theme.dart';
 import 'package:smart_attendance_app/features/attendance/controller/add_subject_controller.dart';
 
 /// Page for adding or editing a subject
@@ -17,6 +18,8 @@ class AddSubjectPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // Create controller for this page
     final controller = Get.put(AddSubjectController());
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     // Initialize for edit mode if needed
     if (isEdit) {
@@ -26,26 +29,49 @@ class AddSubjectPage extends StatelessWidget {
       }
     }
 
-    final theme = Theme.of(context);
-
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      appBar: AppBar(title: Text(isEdit ? 'Edit Subject' : 'Add Subject')),
+      appBar: AppBar(
+        title: Text(isEdit ? 'Edit Subject' : 'Add Subject'),
+        elevation: 0,
+      ),
       body: Form(
         key: controller.formKey,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Subject name field
+              Text(
+                'Subject Details',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppTheme.darkTextMuted : AppTheme.textMuted,
+                  fontSize: 12,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 16),
+
               // Subject name
               TextFormField(
                 controller: controller.nameController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Subject Name',
                   hintText: 'e.g., Mathematics, Physics',
-                  prefixIcon: Icon(Icons.book),
+                  prefixIcon: const Icon(Icons.book, size: 20),
+                  prefixIconConstraints: const BoxConstraints(
+                    minWidth: 48,
+                    minHeight: 48,
+                  ),
                 ),
                 textCapitalization: TextCapitalization.words,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: isDark
+                      ? AppTheme.darkTextPrimary
+                      : AppTheme.textPrimary,
+                ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter a subject name';
@@ -58,13 +84,27 @@ class AddSubjectPage extends StatelessWidget {
               // Minimum attendance
               TextFormField(
                 controller: controller.thresholdController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Minimum Required Attendance (%)',
                   hintText: 'e.g., 75',
-                  prefixIcon: Icon(Icons.percent),
+                  prefixIcon: const Icon(Icons.percent, size: 20),
+                  prefixIconConstraints: const BoxConstraints(
+                    minWidth: 48,
+                    minHeight: 48,
+                  ),
                   suffixText: '%',
+                  suffixStyle: theme.textTheme.bodyLarge?.copyWith(
+                    color: isDark
+                        ? AppTheme.darkTextSecondary
+                        : AppTheme.textSecondary,
+                  ),
                 ),
                 keyboardType: TextInputType.number,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: isDark
+                      ? AppTheme.darkTextPrimary
+                      : AppTheme.textPrimary,
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter a percentage';
@@ -76,31 +116,47 @@ class AddSubjectPage extends StatelessWidget {
                   return null;
                 },
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 28),
 
               // Info card
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: theme.colorScheme.primary,
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.infoColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppTheme.infoColor.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.infoColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'The app will alert you when your attendance falls below the minimum required percentage.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(
-                              alpha: 0.7,
-                            ),
-                          ),
+                      child: const Icon(
+                        Icons.info_outline,
+                        color: AppTheme.infoColor,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'The app will alert you when your attendance falls below the minimum required percentage.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: isDark
+                              ? AppTheme.darkTextSecondary
+                              : AppTheme.textSecondary,
+                          fontSize: 13,
+                          height: 1.4,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 32),
@@ -108,18 +164,73 @@ class AddSubjectPage extends StatelessWidget {
               // Save button - reactive to isLoading
               Obx(
                 () => SizedBox(
+                  width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
                     onPressed: controller.isLoading.value
                         ? null
                         : controller.saveSubject,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      disabledBackgroundColor: isDark
+                          ? AppTheme.darkBorderStrong
+                          : AppTheme.borderStrong,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
                     child: controller.isLoading.value
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
                           )
-                        : Text(isEdit ? 'Save Changes' : 'Add Subject'),
+                        : Text(
+                            isEdit ? 'Save Changes' : 'Add Subject',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Cancel button (secondary)
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton(
+                  onPressed: () => Get.back(),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: isDark
+                        ? AppTheme.darkTextPrimary
+                        : AppTheme.textPrimary,
+                    side: BorderSide(
+                      color: isDark
+                          ? AppTheme.darkBorderSubtle
+                          : AppTheme.borderSubtle,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.2,
+                    ),
                   ),
                 ),
               ),

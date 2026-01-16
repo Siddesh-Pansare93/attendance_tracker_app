@@ -55,16 +55,13 @@ class _WelcomePageState extends State<WelcomePage>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF0A0A0F)
-          : const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? AppTheme.darkBgPrimary : AppTheme.bgPrimary,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             children: [
               const Spacer(flex: 1),
@@ -74,10 +71,10 @@ class _WelcomePageState extends State<WelcomePage>
                 opacity: _fadeAnimation,
                 child: SlideTransition(
                   position: _slideAnimation,
-                  child: _buildLogo(colorScheme),
+                  child: _buildLogo(),
                 ),
               ),
-              const SizedBox(height: 36),
+              const SizedBox(height: 32),
 
               // Title & Tagline
               FadeTransition(
@@ -90,8 +87,10 @@ class _WelcomePageState extends State<WelcomePage>
                         'Attendance Tracker',
                         textAlign: TextAlign.center,
                         style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                          color: isDark
+                              ? AppTheme.darkTextPrimary
+                              : AppTheme.textPrimary,
                           letterSpacing: -0.5,
                         ),
                       ),
@@ -100,7 +99,9 @@ class _WelcomePageState extends State<WelcomePage>
                         'Stay on top of your classes.\nNever miss your attendance goal.',
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyLarge?.copyWith(
-                          color: colorScheme.onSurface.withValues(alpha: 0.6),
+                          color: isDark
+                              ? AppTheme.darkTextSecondary
+                              : AppTheme.textSecondary,
                           height: 1.4,
                         ),
                       ),
@@ -144,20 +145,13 @@ class _WelcomePageState extends State<WelcomePage>
     );
   }
 
-  Widget _buildLogo(ColorScheme colorScheme) {
+  Widget _buildLogo() {
     return Container(
       width: 100,
       height: 100,
       decoration: BoxDecoration(
         color: AppTheme.primaryColor,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withValues(alpha: 0.3),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(20),
       ),
       child: const Icon(
         Icons.assignment_turned_in_rounded,
@@ -169,6 +163,7 @@ class _WelcomePageState extends State<WelcomePage>
 
   Widget _buildFeatureList(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final features = [
       (Icons.offline_bolt_rounded, 'Works Offline', 'All data stored locally'),
       (Icons.bar_chart_rounded, 'Track Progress', 'Visual stats & analytics'),
@@ -178,36 +173,39 @@ class _WelcomePageState extends State<WelcomePage>
     return Column(
       children: features.map((f) {
         return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.only(bottom: 12),
           child: Row(
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(14),
+                  color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(f.$1, color: AppTheme.primaryColor, size: 24),
+                child: Icon(f.$1, color: AppTheme.primaryColor, size: 20),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       f.$2,
-                      style: theme.textTheme.titleSmall?.copyWith(
+                      style: theme.textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppTheme.darkTextPrimary
+                            : AppTheme.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       f.$3,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.6,
-                        ),
+                        color: isDark
+                            ? AppTheme.darkTextMuted
+                            : AppTheme.textMuted,
                       ),
                     ),
                   ],
@@ -221,23 +219,33 @@ class _WelcomePageState extends State<WelcomePage>
   }
 
   Widget _buildCTAButtons(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       children: [
         // Primary CTA
         SizedBox(
           width: double.infinity,
-          height: 56,
+          height: 50,
           child: ElevatedButton(
             onPressed: () => Get.toNamed(AppRoutes.setupSubjects),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   'Get Started',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                 ),
                 SizedBox(width: 8),
-                Icon(Icons.arrow_forward_rounded, size: 20),
+                Icon(Icons.arrow_forward_rounded, size: 18),
               ],
             ),
           ),
@@ -245,21 +253,29 @@ class _WelcomePageState extends State<WelcomePage>
         const SizedBox(height: 12),
 
         // Secondary CTA
-        TextButton(
-          onPressed: () {
-            Get.find<SetupController>().skipSetup();
-          },
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          ),
-          child: Text(
-            'Skip for now',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.5),
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: OutlinedButton(
+            onPressed: () {
+              Get.find<SetupController>().skipSetup();
+            },
+            style: OutlinedButton.styleFrom(
+              foregroundColor: isDark
+                  ? AppTheme.darkTextSecondary
+                  : AppTheme.textSecondary,
+              side: BorderSide(
+                color: isDark
+                    ? AppTheme.darkBorderSubtle
+                    : AppTheme.borderSubtle,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Skip for now',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
             ),
           ),
         ),
@@ -269,6 +285,8 @@ class _WelcomePageState extends State<WelcomePage>
 
   Widget _buildFooter(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -277,18 +295,18 @@ class _WelcomePageState extends State<WelcomePage>
           Text(
             'Made with ',
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              color: isDark ? AppTheme.darkTextMuted : AppTheme.textMuted,
             ),
           ),
           Icon(
             Icons.favorite_rounded,
             size: 14,
-            color: const Color(0xFFEF4444).withValues(alpha: 0.8),
+            color: AppTheme.criticalColor.withValues(alpha: 0.7),
           ),
           Text(
             ' by ',
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              color: isDark ? AppTheme.darkTextMuted : AppTheme.textMuted,
             ),
           ),
           Text(

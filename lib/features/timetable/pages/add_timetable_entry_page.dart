@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_attendance_app/core/constants/app_constants.dart';
+import 'package:smart_attendance_app/core/theme/app_theme.dart';
 import 'package:smart_attendance_app/features/timetable/controller/timetable_controller.dart';
 import 'package:smart_attendance_app/features/timetable/controller/add_timetable_entry_controller.dart';
 
@@ -20,6 +21,8 @@ class AddTimetableEntryPage extends StatelessWidget {
     // Create controller for this page
     final controller = Get.put(AddTimetableEntryController());
     final timetableController = Get.find<TimetableController>();
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     // Initialize for edit mode if needed
     if (isEdit) {
@@ -28,8 +31,6 @@ class AddTimetableEntryPage extends StatelessWidget {
         controller.initForEdit(editId);
       }
     }
-
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(title: Text(isEdit ? 'Edit Entry' : 'Add Class')),
@@ -43,22 +44,49 @@ class AddTimetableEntryPage extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.warning_amber,
-                    size: 64,
-                    color: Colors.amber,
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.warningColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.warning_amber,
+                      size: 40,
+                      color: AppTheme.warningColor,
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  Text('No Subjects Found', style: theme.textTheme.titleLarge),
+                  Text(
+                    'No Subjects Found',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: isDark
+                          ? AppTheme.darkTextPrimary
+                          : AppTheme.textPrimary,
+                    ),
+                  ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Please add subjects first before creating a timetable.',
                     textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: isDark
+                          ? AppTheme.darkTextSecondary
+                          : AppTheme.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () => Get.back(),
-                    child: const Text('Go Back'),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () => Get.back(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        elevation: 0,
+                      ),
+                      child: const Text('Go Back'),
+                    ),
                   ),
                 ],
               ),
@@ -69,12 +97,29 @@ class AddTimetableEntryPage extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Subject dropdown - auto-selects
+            // Form section label
+            Text(
+              'Class Details',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppTheme.darkTextMuted : AppTheme.textMuted,
+                fontSize: 12,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Subject dropdown
             Obx(
               () => DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Subject',
-                  prefixIcon: Icon(Icons.book),
+                  hintText: 'Select a subject',
+                  prefixIcon: const Icon(Icons.book, size: 20),
+                  prefixIconConstraints: const BoxConstraints(
+                    minWidth: 48,
+                    minHeight: 48,
+                  ),
                 ),
                 items: subjects.map((subject) {
                   return DropdownMenuItem(
@@ -94,12 +139,17 @@ class AddTimetableEntryPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Day of week - auto-selects
+            // Day of week
             Obx(
               () => DropdownButtonFormField<int>(
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Day of Week',
-                  prefixIcon: Icon(Icons.calendar_today),
+                  hintText: 'Select a day',
+                  prefixIcon: const Icon(Icons.calendar_today, size: 20),
+                  prefixIconConstraints: const BoxConstraints(
+                    minWidth: 48,
+                    minHeight: 48,
+                  ),
                 ),
                 items: List.generate(7, (index) {
                   return DropdownMenuItem(
@@ -118,18 +168,68 @@ class AddTimetableEntryPage extends StatelessWidget {
             // Save button
             Obx(
               () => SizedBox(
+                width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
                   onPressed: controller.isLoading.value
                       ? null
                       : controller.saveEntry,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    disabledBackgroundColor: isDark
+                        ? AppTheme.darkBorderStrong
+                        : AppTheme.borderStrong,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
                   child: controller.isLoading.value
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
                         )
-                      : Text(isEdit ? 'Save Changes' : 'Add Class'),
+                      : Text(
+                          isEdit ? 'Save Changes' : 'Add Class',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Cancel button
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton(
+                onPressed: () => Get.back(),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: isDark
+                      ? AppTheme.darkTextPrimary
+                      : AppTheme.textPrimary,
+                  side: BorderSide(
+                    color: isDark
+                        ? AppTheme.darkBorderSubtle
+                        : AppTheme.borderSubtle,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
