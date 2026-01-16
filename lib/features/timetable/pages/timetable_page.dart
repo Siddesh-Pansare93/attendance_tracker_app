@@ -90,17 +90,23 @@ class TimetablePage extends StatelessWidget {
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.max,
                     children: [
-                      Text(
-                        kShortDayNames[day],
-                        style: TextStyle(
-                          color: isSelected
-                              ? Colors.white
-                              : theme.colorScheme.onSurface,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                      // Day name with fixed height
+                      SizedBox(
+                        height: 20,
+                        child: Text(
+                          kShortDayNames[day],
+                          style: TextStyle(
+                            color: isSelected
+                                ? Colors.white
+                                : theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
                         ),
                       ),
+                      // Class count badge with fixed position
                       if (hasClasses)
                         Container(
                           margin: const EdgeInsets.only(top: 4),
@@ -126,6 +132,13 @@ class TimetablePage extends StatelessWidget {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
+                        )
+                      else
+                        // Empty space to maintain consistent alignment
+                        Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          height: 18,
+                          width: 28,
                         ),
                     ],
                   ),

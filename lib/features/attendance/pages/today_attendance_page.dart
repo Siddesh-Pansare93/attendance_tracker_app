@@ -16,7 +16,7 @@ class TodayAttendancePage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Today's Attendance"),
+        title: const Text("Analytics"),
         actions: [
           IconButton(
             onPressed: () => controller.loadTodayClasses(),
@@ -29,24 +29,64 @@ class TodayAttendancePage extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (controller.todayClasses.isEmpty) {
-          return const NoClassesTodayEmpty();
-        }
-
         return RefreshIndicator(
           onRefresh: controller.loadTodayClasses,
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // Show date header and analytics regardless of whether there are classes today
               // Date header
               _buildDateHeader(context),
               const SizedBox(height: 16),
 
-              // Progress summary
-              _buildProgressSummary(context, controller),
-              const SizedBox(height: 24),
+              // Progress summary (only if there are classes today)
+              if (controller.todayClasses.isNotEmpty) ...[
+                _buildProgressSummary(context, controller),
+                const SizedBox(height: 24),
+              ] else ...[
+                // Show a message if no classes today
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.event_available,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 28,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'No Classes Today',
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Enjoy your free time!',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.6),
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
 
-              // Analytics section
+              // Analytics section (always shown)
               _buildAnalyticsSection(context),
             ],
           ),
@@ -168,7 +208,6 @@ class TodayAttendancePage extends StatelessWidget {
     );
   }
 
-
   /// Analytics section with filters
   Widget _buildAnalyticsSection(BuildContext context) {
     final dashboardController = Get.find<DashboardController>();
@@ -190,154 +229,162 @@ class TodayAttendancePage extends StatelessWidget {
         const SizedBox(height: 16),
 
         // Analytics stats
-        Obx(
-          () {
-            final analytics = dashboardController.getAnalyticsData();
-            return Column(
-              children: [
-                // Summary row
-                Row(
+        Obx(() {
+          final analytics = dashboardController.getAnalyticsData();
+          return Column(
+            children: [
+              // Summary row
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildAnalyticsStat(
+                      context,
+                      '${analytics['totalClasses']}',
+                      'Classes',
+                      Colors.blue,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildAnalyticsStat(
+                      context,
+                      '${analytics['totalPresent']}',
+                      'Present',
+                      AppTheme.safeColor,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildAnalyticsStat(
+                      context,
+                      '${analytics['totalAbsent']}',
+                      'Absent',
+                      AppTheme.criticalColor,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Overall percentage card
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.colorScheme.primary.withValues(alpha: 0.8),
+                      theme.colorScheme.primary.withValues(alpha: 0.6),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Row(
                   children: [
-                    Expanded(
-                      child: _buildAnalyticsStat(
-                        context,
-                        '${analytics['totalClasses']}',
-                        'Classes',
-                        Colors.blue,
+                    // Circular progress indicator
+                    SizedBox(
+                      width: 80,
+                      height: 80,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            value:
+                                (analytics['overallPercentage'] as double) /
+                                100,
+                            strokeWidth: 8,
+                            backgroundColor: Colors.white.withValues(
+                              alpha: 0.3,
+                            ),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                '${(analytics['overallPercentage'] as double).toStringAsFixed(1)}%',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 20),
+                    // Text info
                     Expanded(
-                      child: _buildAnalyticsStat(
-                        context,
-                        '${analytics['totalPresent']}',
-                        'Present',
-                        AppTheme.safeColor,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildAnalyticsStat(
-                        context,
-                        '${analytics['totalAbsent']}',
-                        'Absent',
-                        AppTheme.criticalColor,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(
+                                Icons.analytics,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Overall Attendance',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Based on selected period',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+              ),
+              const SizedBox(height: 12),
 
-                // Overall percentage card
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        theme.colorScheme.primary.withValues(alpha: 0.8),
-                        theme.colorScheme.primary.withValues(alpha: 0.6),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      // Circular progress indicator
-                      SizedBox(
-                        width: 80,
-                        height: 80,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            CircularProgressIndicator(
-                              value: (analytics['overallPercentage'] as double) / 100,
-                              strokeWidth: 8,
-                              backgroundColor: Colors.white.withValues(alpha: 0.3),
-                              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  '${(analytics['overallPercentage'] as double).toStringAsFixed(1)}%',
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      // Text info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.analytics, color: Colors.white, size: 20),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Overall Attendance',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Based on selected period',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.8),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+              // Per-subject breakdown
+              if ((analytics['subjectStats'] as Map).isNotEmpty) ...[
+                Text(
+                  'By Subject',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 12),
-
-                // Per-subject breakdown
-                if ((analytics['subjectStats'] as Map).isNotEmpty) ...[
-                  Text(
-                    'By Subject',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                      fontWeight: FontWeight.w600,
-                    ),
+                const SizedBox(height: 8),
+                ...(analytics['subjectStats'] as Map).entries.map(
+                  (entry) => _buildSubjectAnalyticsTile(
+                    context,
+                    entry.key as String,
+                    entry.value as Map<String, int>,
                   ),
-                  const SizedBox(height: 8),
-                  ...(analytics['subjectStats'] as Map).entries.map(
-                        (entry) => _buildSubjectAnalyticsTile(
-                          context,
-                          entry.key as String,
-                          entry.value as Map<String, int>,
-                        ),
-                      ),
-                ],
+                ),
               ],
-            );
-          },
-        ),
+            ],
+          );
+        }),
       ],
     );
   }
@@ -388,7 +435,7 @@ class TodayAttendancePage extends StatelessWidget {
   ) {
     final theme = Theme.of(context);
     IconData icon;
-    
+
     switch (label) {
       case 'Weekly':
         icon = Icons.date_range;
@@ -402,7 +449,7 @@ class TodayAttendancePage extends StatelessWidget {
       default:
         icon = Icons.calendar_today;
     }
-    
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -419,7 +466,9 @@ class TodayAttendancePage extends StatelessWidget {
                   end: Alignment.bottomRight,
                 )
               : null,
-          color: isSelected ? null : theme.colorScheme.primary.withValues(alpha: 0.1),
+          color: isSelected
+              ? null
+              : theme.colorScheme.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
           boxShadow: isSelected
               ? [
@@ -465,7 +514,7 @@ class TodayAttendancePage extends StatelessWidget {
   ) {
     final theme = Theme.of(context);
     IconData icon;
-    
+
     switch (label) {
       case 'Classes':
         icon = Icons.class_;
@@ -479,7 +528,7 @@ class TodayAttendancePage extends StatelessWidget {
       default:
         icon = Icons.info;
     }
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -574,11 +623,7 @@ class TodayAttendancePage extends StatelessWidget {
                   color: percentageColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  Icons.book,
-                  color: percentageColor,
-                  size: 20,
-                ),
+                child: Icon(Icons.book, color: percentageColor, size: 20),
               ),
               const SizedBox(width: 12),
               // Subject name and stats
@@ -596,7 +641,9 @@ class TodayAttendancePage extends StatelessWidget {
                     Text(
                       '$present/$classes classes',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.6,
+                        ),
                       ),
                     ),
                   ],
@@ -604,7 +651,10 @@ class TodayAttendancePage extends StatelessWidget {
               ),
               // Percentage badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -663,8 +713,8 @@ class TodayAttendancePage extends StatelessWidget {
       context: context,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
-      initialDateRange: controller.fromDate.value != null &&
-              controller.toDate.value != null
+      initialDateRange:
+          controller.fromDate.value != null && controller.toDate.value != null
           ? DateTimeRange(
               start: controller.fromDate.value!,
               end: controller.toDate.value!,
