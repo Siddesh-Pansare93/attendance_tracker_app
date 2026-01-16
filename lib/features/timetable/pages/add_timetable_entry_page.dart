@@ -69,10 +69,9 @@ class AddTimetableEntryPage extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Subject dropdown - reactive to selectedSubjectId
+            // Subject dropdown - auto-selects
             Obx(
               () => DropdownButtonFormField<String>(
-                initialValue: controller.selectedSubjectId.value,
                 decoration: const InputDecoration(
                   labelText: 'Subject',
                   prefixIcon: Icon(Icons.book),
@@ -83,8 +82,10 @@ class AddTimetableEntryPage extends StatelessWidget {
                     child: Text(subject.name),
                   );
                 }).toList(),
-                onChanged: (value) =>
-                    controller.selectedSubjectId.value = value,
+                onChanged: (value) {
+                  controller.selectedSubjectId.value = value;
+                },
+                initialValue: controller.selectedSubjectId.value,
                 validator: (value) {
                   if (value == null) return 'Please select a subject';
                   return null;
@@ -93,10 +94,9 @@ class AddTimetableEntryPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Day of week - reactive to selectedDay
+            // Day of week - auto-selects
             Obx(
               () => DropdownButtonFormField<int>(
-                initialValue: controller.selectedDay.value,
                 decoration: const InputDecoration(
                   labelText: 'Day of Week',
                   prefixIcon: Icon(Icons.calendar_today),
@@ -110,11 +110,12 @@ class AddTimetableEntryPage extends StatelessWidget {
                 onChanged: (value) {
                   if (value != null) controller.selectedDay.value = value;
                 },
+                initialValue: controller.selectedDay.value,
               ),
             ),
             const SizedBox(height: 32),
 
-            // Save button - reactive to isLoading
+            // Save button
             Obx(
               () => SizedBox(
                 height: 50,

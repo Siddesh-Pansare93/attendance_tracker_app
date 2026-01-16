@@ -14,7 +14,6 @@ class SetupTimetablePage extends StatefulWidget {
 
 class _SetupTimetablePageState extends State<SetupTimetablePage> {
   int _selectedDay = 1; // Monday
-  String? _selectedSubjectId;
 
   @override
   Widget build(BuildContext context) {
@@ -82,43 +81,32 @@ class _SetupTimetablePageState extends State<SetupTimetablePage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Add entry card - simplified
+                  // Add entry card - simplified, auto-submit on dropdown
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Obx(
-                              () => DropdownButtonFormField<String>(
-                                initialValue: _selectedSubjectId,
-                                decoration: const InputDecoration(
-                                  labelText: 'Select Subject',
-                                  contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                ),
-                                items: controller.subjects.map((s) {
-                                  return DropdownMenuItem(
-                                    value: s.id,
-                                    child: Text(s.name),
-                                  );
-                                }).toList(),
-                                onChanged: (v) =>
-                                    setState(() => _selectedSubjectId = v),
-                              ),
+                      child: Obx(
+                        () => DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(
+                            labelText: 'Select Subject to Add',
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          ElevatedButton.icon(
-                            onPressed: _selectedSubjectId == null
-                                ? null
-                                : () => _addEntry(controller),
-                            icon: const Icon(Icons.add, size: 18),
-                            label: const Text('Add'),
-                          ),
-                        ],
+                          items: controller.subjects.map((s) {
+                            return DropdownMenuItem(
+                              value: s.id,
+                              child: Text(s.name),
+                            );
+                          }).toList(),
+                          onChanged: (v) {
+                            if (v != null) {
+                              _addEntry(controller, v);
+                            }
+                          },
+                          hint: const Text('Select Subject'),
+                        ),
                       ),
                     ),
                   ),
@@ -258,15 +246,12 @@ class _SetupTimetablePageState extends State<SetupTimetablePage> {
     );
   }
 
-  void _addEntry(SetupController controller) {
-    if (_selectedSubjectId == null) return;
-
+  void _addEntry(SetupController controller, String subjectId) {
     controller.addTimetableEntry(
-      subjectId: _selectedSubjectId!,
+      subjectId: subjectId,
       dayOfWeek: _selectedDay,
     );
 
-    // Reset selection for quick add
-    setState(() => _selectedSubjectId = null);
+    // No reset needed - dropdown auto-clears
   }
 }
