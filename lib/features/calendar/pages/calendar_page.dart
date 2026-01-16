@@ -4,7 +4,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:smart_attendance_app/core/routes/app_routes.dart';
 import 'package:smart_attendance_app/core/theme/app_theme.dart';
 import 'package:smart_attendance_app/core/utils/attendance_utils.dart';
-import 'package:smart_attendance_app/core/services/storage_service.dart';
+import 'package:smart_attendance_app/core/repositories/subject_repository.dart';
 import 'package:smart_attendance_app/features/calendar/controller/calendar_controller.dart';
 import 'package:smart_attendance_app/features/attendance/data/model/attendance_record_model.dart';
 
@@ -16,7 +16,7 @@ class CalendarPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<CalendarController>();
     final theme = Theme.of(context);
-    final storage = StorageService.instance;
+    final subjectRepo = Get.find<SubjectRepository>();
 
     return Scaffold(
       appBar: AppBar(
@@ -224,11 +224,11 @@ class CalendarPage extends StatelessWidget {
                             ),
                           ),
                         )
-                      else
-                        ...controller.recordsForDate.map(
-                          (record) =>
-                              _buildRecordItem(context, record, storage),
-                        ),
+                       else
+                         ...controller.recordsForDate.map(
+                           (record) =>
+                               _buildRecordItem(context, record, subjectRepo),
+                         ),
                     ],
                   ),
                 ),
@@ -258,10 +258,10 @@ class CalendarPage extends StatelessWidget {
   Widget _buildRecordItem(
     BuildContext context,
     AttendanceRecord record,
-    StorageService storage,
+    SubjectRepository subjectRepo,
   ) {
     final theme = Theme.of(context);
-    final subject = storage.getSubject(record.subjectId);
+    final subject = subjectRepo.getById(record.subjectId);
 
     // Determine status color and text
     Color statusColor;
