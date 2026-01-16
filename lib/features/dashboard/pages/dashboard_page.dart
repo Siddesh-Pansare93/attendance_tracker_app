@@ -1,388 +1,544 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_attendance_app/core/theme/app_theme.dart';
-import 'package:smart_attendance_app/common/widgets/attendance_indicator.dart';
-import 'package:smart_attendance_app/common/widgets/today_class_tile.dart';
 import 'package:smart_attendance_app/features/dashboard/controller/dashboard_controller.dart';
 import 'package:smart_attendance_app/features/timetable/data/model/timetable_entry_model.dart';
 import 'package:smart_attendance_app/core/utils/attendance_utils.dart';
 
-/// Main Dashboard/Home page showing overall attendance and today's classes
+/// Modern minimalist dashboard page with clean SaaS design
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<DashboardController>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: isDark ? AppTheme.darkBgPrimary : AppTheme.bgPrimary,
       appBar: AppBar(
-        title: const Text('Dashboard'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        title: const Text('Attendance Tracker'),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        return Column(
-          children: [
-            // Fixed analytics header with Overall card
-            _buildOverallCard(context, controller),
+        return RefreshIndicator(
+          onRefresh: () => Future.value(controller.refreshData()),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                // Overall attendance card
+                _buildOverallCard(context, controller, isDark),
+                const SizedBox(height: 24),
 
-            // Extra Lecture button
-            _buildExtraLectureButton(context, controller),
+                // Today's classes section
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header with title and action
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Today's Classes",
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 4),
+                              Obx(
+                                () => Text(
+                                  '${controller.todayClasses.length} classes',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: isDark
+                                            ? AppTheme.darkTextMuted
+                                            : AppTheme.textMuted,
+                                      ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: () =>
+                                _showAddExtraLectureModal(context, controller),
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text('Add'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10,
+                              ),
+                              backgroundColor: AppTheme.primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
 
-            // Today's classes section (vertical scrollable list) - MAIN CONTENT
-            Expanded(child: _buildTodayClassesSection(context, controller)),
-          ],
+                      // Classes list
+                      _buildClassesList(context, controller, isDark),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+              ],
+            ),
+          ),
         );
       }),
     );
   }
 
-  /// Overall attendance card in the header
+  /// Overall attendance card with circular indicator
   Widget _buildOverallCard(
     BuildContext context,
     DashboardController controller,
+    bool isDark,
   ) {
-    final theme = Theme.of(context);
-
-    return Container(
-      color: AppTheme.primaryColor,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 20, left: 20, right: 20),
-          child: Row(
-            children: [
-              // Circular indicator
-              Obx(
-                () => AttendanceIndicator(
-                  percentage: controller.overallPercentage.value,
-                  threshold: controller.threshold.value,
-                  size: 100,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.darkSurfaceDefault : AppTheme.surfaceDefault,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? AppTheme.darkBorderSubtle : AppTheme.borderSubtle,
+          ),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            // Header
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppTheme.primaryColor.withValues(alpha: 0.2)
+                        : AppTheme.primarySoft,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.assessment_outlined,
+                    color: AppTheme.primaryColor,
+                    size: 24,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 24),
-
-              // Stats
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                const SizedBox(width: 12),
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Overall Attendance',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontWeight: FontWeight.w600,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: isDark
+                            ? AppTheme.darkTextSecondary
+                            : AppTheme.textSecondary,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(height: 12),
                     Obx(
-                      () => Row(
-                        children: [
-                          _buildMiniStat(
-                            context,
-                            '${controller.subjects.length}',
-                            'Subjects',
-                          ),
-                          const SizedBox(width: 20),
-                          _buildMiniStat(
-                            context,
-                            '${controller.subjectsAboveThreshold}',
-                            'Safe',
-                            color: AppTheme.safeColor,
-                          ),
-                          const SizedBox(width: 20),
-                          _buildMiniStat(
-                            context,
-                            '${controller.subjectsBelowThreshold}',
-                            'At Risk',
-                            color: AppTheme.criticalColor,
-                          ),
-                        ],
+                      () => Text(
+                        '${controller.overallPercentage.value.toStringAsFixed(1)}%',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.primaryColor,
+                            ),
                       ),
                     ),
                   ],
                 ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Progress bar
+            Obx(
+              () => ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  minHeight: 6,
+                  value: controller.overallPercentage.value / 100,
+                  backgroundColor: isDark
+                      ? AppTheme.darkBgSecondary
+                      : AppTheme.bgSecondary,
+                  valueColor: AlwaysStoppedAnimation(
+                    AppTheme.getStatusColor(
+                      controller.overallPercentage.value,
+                      controller.threshold.value,
+                    ),
+                  ),
+                ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 16),
+
+            // Stats row
+            Obx(
+              () => Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildStatBadge(
+                    context,
+                    '${controller.subjects.length}',
+                    'Subjects',
+                    isDark,
+                  ),
+                  _buildStatBadge(
+                    context,
+                    '${controller.subjectsAboveThreshold}',
+                    'Safe',
+                    isDark,
+                    color: AppTheme.safeColor,
+                  ),
+                  _buildStatBadge(
+                    context,
+                    '${controller.subjectsBelowThreshold}',
+                    'At Risk',
+                    isDark,
+                    color: AppTheme.criticalColor,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildMiniStat(
+  /// Small stat badge
+  Widget _buildStatBadge(
     BuildContext context,
     String value,
-    String label, {
+    String label,
+    bool isDark, {
     Color? color,
   }) {
     return Column(
       children: [
         Text(
           value,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color ?? Colors.white,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: color ?? AppTheme.primaryColor,
           ),
         ),
+        const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.white.withValues(alpha: 0.7),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: isDark ? AppTheme.darkTextMuted : AppTheme.textMuted,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
     );
   }
 
-  /// Extra Lecture button
-  Widget _buildExtraLectureButton(
+  /// Classes list view
+  Widget _buildClassesList(
     BuildContext context,
     DashboardController controller,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            "Today's Classes",
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          ElevatedButton.icon(
-            onPressed: () => _showAddExtraLectureModal(context, controller),
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Extra Lecture'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Today's classes section - vertical scrollable list with inline attendance marking
-  Widget _buildTodayClassesSection(
-    BuildContext context,
-    DashboardController controller,
+    bool isDark,
   ) {
     return Obx(() {
       if (controller.todayClasses.isEmpty) {
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.event_available,
-                  color: AppTheme.safeColor,
-                  size: 48,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    'No classes scheduled today!',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                ),
-              ],
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.darkBgSecondary : AppTheme.bgSecondary,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isDark ? AppTheme.darkBorderSubtle : AppTheme.borderSubtle,
             ),
+          ),
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            children: [
+              Icon(
+                Icons.event_available_outlined,
+                size: 48,
+                color: isDark ? AppTheme.darkTextMuted : AppTheme.textMuted,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'No classes today',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: isDark
+                      ? AppTheme.darkTextSecondary
+                      : AppTheme.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         );
       }
 
-      return ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      return ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
         itemCount: controller.todayClasses.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           final entry = controller.todayClasses[index];
-          return _buildTodayClassTile(context, entry, controller);
+          return _buildClassTile(context, entry, controller, isDark);
         },
       );
     });
   }
 
-  /// Build a single class tile with inline attendance buttons
-  Widget _buildTodayClassTile(
+  /// Individual class tile
+  Widget _buildClassTile(
     BuildContext context,
     TimetableEntry entry,
     DashboardController controller,
+    bool isDark,
   ) {
     final subjectName = controller.getSubjectName(entry.subjectId);
 
-    return Obx(
-      () {
-        final currentStatus = controller.getTodayStatus(entry.id);
-        final isMarking = controller.markingInProgress.value == entry.id;
+    return Obx(() {
+      final currentStatus = controller.getTodayStatus(entry.id);
+      final isMarking = controller.markingInProgress.value == entry.id;
 
-        return TodayClassTile(
-          subjectName: subjectName,
-          classType: entry.type,
-          startTime: entry.startTime,
-          endTime: entry.endTime,
-          currentStatus: currentStatus,
-          isMarking: isMarking,
-          onPresent: () {
-            controller.markAttendance(
-              entry.subjectId,
-              'present',
-              timetableEntryId: entry.id,
-            );
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Marked as Present'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          },
-          onAbsent: () {
-            controller.markAttendance(
-              entry.subjectId,
-              'absent',
-              timetableEntryId: entry.id,
-            );
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Marked as Absent'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          },
-          onCancelled: () {
-            controller.markAttendance(
-              entry.subjectId,
-              'cancelled',
-              timetableEntryId: entry.id,
-            );
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Lecture Cancelled'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          },
-          onChangeStatus: () {
-            _showChangeStatusDialog(context, controller, entry);
-          },
-        );
-      },
-    );
+      return Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.darkSurfaceDefault : AppTheme.surfaceDefault,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isDark ? AppTheme.darkBorderSubtle : AppTheme.borderSubtle,
+          ),
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            // Subject info
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Time indicator
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppTheme.primaryColor.withValues(alpha: 0.15)
+                        : AppTheme.primarySoft,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.schedule_outlined,
+                    color: AppTheme.primaryColor,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        subjectName,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? AppTheme.darkTextPrimary
+                              : AppTheme.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${entry.startTime} - ${entry.endTime}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: isDark
+                              ? AppTheme.darkTextMuted
+                              : AppTheme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Status badge
+                _buildStatusBadge(context, currentStatus, isDark),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Action buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildActionButton(
+                  context,
+                  'Present',
+                  Icons.check,
+                  AppTheme.safeColor,
+                  isMarking,
+                  () => controller.markAttendance(
+                    entry.subjectId,
+                    'present',
+                    timetableEntryId: entry.id,
+                  ),
+                  isDark,
+                ),
+                _buildActionButton(
+                  context,
+                  'Absent',
+                  Icons.close,
+                  AppTheme.criticalColor,
+                  isMarking,
+                  () => controller.markAttendance(
+                    entry.subjectId,
+                    'absent',
+                    timetableEntryId: entry.id,
+                  ),
+                  isDark,
+                ),
+                _buildActionButton(
+                  context,
+                  'Cancelled',
+                  Icons.event_busy_outlined,
+                  AppTheme.warningColor,
+                  isMarking,
+                  () => controller.markAttendance(
+                    entry.subjectId,
+                    'cancelled',
+                    timetableEntryId: entry.id,
+                  ),
+                  isDark,
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    });
   }
 
-  /// Show dialog to change attendance status
-  void _showChangeStatusDialog(
-    BuildContext context,
-    DashboardController controller,
-    TimetableEntry entry,
-  ) {
-    final currentStatus = controller.getTodayStatus(entry.id);
+  /// Status badge
+  Widget _buildStatusBadge(BuildContext context, String? status, bool isDark) {
+    Color statusColor;
+    IconData statusIcon;
+    String statusText;
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Change Attendance Status'),
-        content: const Text('Select new attendance status:'),
-        actions: [
-          if (currentStatus != 'present')
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                controller.markAttendance(
-                  entry.subjectId,
-                  'present',
-                  timetableEntryId: entry.id,
-                );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Updated to Present'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-              child: const Text('Present'),
+    switch (status) {
+      case 'present':
+        statusColor = AppTheme.safeColor;
+        statusIcon = Icons.check_circle;
+        statusText = 'Present';
+        break;
+      case 'absent':
+        statusColor = AppTheme.criticalColor;
+        statusIcon = Icons.cancel;
+        statusText = 'Absent';
+        break;
+      case 'cancelled':
+        statusColor = AppTheme.warningColor;
+        statusIcon = Icons.event_busy;
+        statusText = 'Cancel';
+        break;
+      default:
+        statusColor = isDark
+            ? AppTheme.darkBorderSubtle
+            : AppTheme.borderSubtle;
+        statusIcon = Icons.circle_outlined;
+        statusText = 'Pending';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark
+            ? statusColor.withValues(alpha: 0.15)
+            : statusColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(statusIcon, size: 16, color: statusColor),
+          const SizedBox(width: 4),
+          Text(
+            statusText,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: statusColor,
+              fontWeight: FontWeight.w600,
             ),
-          if (currentStatus != 'absent')
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                controller.markAttendance(
-                  entry.subjectId,
-                  'absent',
-                  timetableEntryId: entry.id,
-                );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Updated to Absent'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-              child: const Text('Absent'),
-            ),
-          if (currentStatus != 'cancelled')
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                controller.markAttendance(
-                  entry.subjectId,
-                  'cancelled',
-                  timetableEntryId: entry.id,
-                );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Updated to Cancelled'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-              child: const Text('Lecture Cancelled'),
-            ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
           ),
         ],
       ),
     );
   }
 
-  /// Show modal to add extra lecture
+  /// Action button
+  Widget _buildActionButton(
+    BuildContext context,
+    String label,
+    IconData icon,
+    Color color,
+    bool isLoading,
+    VoidCallback onPressed,
+    bool isDark,
+  ) {
+    return Expanded(
+      child: OutlinedButton.icon(
+        onPressed: isLoading ? null : onPressed,
+        icon: Icon(icon, size: 18),
+        label: Text(label, style: const TextStyle(fontSize: 13)),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: color,
+          side: BorderSide(color: color.withValues(alpha: 0.5)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+        ),
+      ),
+    ).paddingSymmetric(horizontal: 3);
+  }
+
+  /// Show add extra lecture modal
   void _showAddExtraLectureModal(
     BuildContext context,
     DashboardController controller,
   ) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    String? selectedSubjectId;
+    DateTime selectedDate = DateTime.now();
+    String? selectedStatus;
 
     showDialog(
       context: context,
       builder: (context) {
-        String? selectedSubjectId;
-        DateTime selectedDate = DateTime.now();
-        String? selectedStatus;
-
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
               title: const Text('Add Extra Lecture'),
+              backgroundColor: isDark
+                  ? AppTheme.darkSurfaceDefault
+                  : AppTheme.surfaceDefault,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Subject dropdown
                     Text(
                       'Subject',
-                      style: theme.textTheme.bodySmall?.copyWith(
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -398,17 +554,14 @@ class DashboardPage extends StatelessWidget {
                             child: Text(s.name),
                           );
                         }).toList(),
-                        onChanged: (value) {
-                          setState(() => selectedSubjectId = value);
-                        },
+                        onChanged: (value) =>
+                            setState(() => selectedSubjectId = value),
                       ),
                     ),
                     const SizedBox(height: 16),
-
-                    // Date picker
                     Text(
                       'Date',
-                      style: theme.textTheme.bodySmall?.copyWith(
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -421,9 +574,7 @@ class DashboardPage extends StatelessWidget {
                           firstDate: DateTime(2020),
                           lastDate: DateTime(2100),
                         );
-                        if (date != null) {
-                          setState(() => selectedDate = date);
-                        }
+                        if (date != null) setState(() => selectedDate = date);
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -431,7 +582,11 @@ class DashboardPage extends StatelessWidget {
                           vertical: 10,
                         ),
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
+                          border: Border.all(
+                            color: isDark
+                                ? AppTheme.darkBorderSubtle
+                                : AppTheme.borderSubtle,
+                          ),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -440,11 +595,9 @@ class DashboardPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-
-                    // Status dropdown
                     Text(
                       'Status',
-                      style: theme.textTheme.bodySmall?.copyWith(
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -454,16 +607,21 @@ class DashboardPage extends StatelessWidget {
                       hint: const Text('Select Status'),
                       value: selectedStatus,
                       items: const [
-                        DropdownMenuItem(value: 'present', child: Text('Present')),
-                        DropdownMenuItem(value: 'absent', child: Text('Absent')),
+                        DropdownMenuItem(
+                          value: 'present',
+                          child: Text('Present'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'absent',
+                          child: Text('Absent'),
+                        ),
                         DropdownMenuItem(
                           value: 'cancelled',
                           child: Text('Cancelled'),
                         ),
                       ],
-                      onChanged: (value) {
-                        setState(() => selectedStatus = value);
-                      },
+                      onChanged: (value) =>
+                          setState(() => selectedStatus = value),
                     ),
                   ],
                 ),
@@ -476,8 +634,9 @@ class DashboardPage extends StatelessWidget {
                 ElevatedButton(
                   onPressed: selectedSubjectId != null && selectedStatus != null
                       ? () {
-                          final dateStr =
-                              AttendanceUtils.formatDateForStorage(selectedDate);
+                          final dateStr = AttendanceUtils.formatDateForStorage(
+                            selectedDate,
+                          );
                           controller.addExtraLecture(
                             selectedSubjectId!,
                             dateStr,
@@ -488,7 +647,6 @@ class DashboardPage extends StatelessWidget {
                             'Success',
                             'Extra lecture added!',
                             snackPosition: SnackPosition.BOTTOM,
-                            duration: const Duration(seconds: 2),
                           );
                         }
                       : null,
