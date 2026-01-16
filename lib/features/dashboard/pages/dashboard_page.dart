@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_attendance_app/core/theme/app_theme.dart';
 import 'package:smart_attendance_app/common/widgets/attendance_indicator.dart';
+import 'package:smart_attendance_app/common/widgets/today_class_tile.dart';
 import 'package:smart_attendance_app/features/dashboard/controller/dashboard_controller.dart';
+import 'package:smart_attendance_app/features/timetable/data/model/timetable_entry_model.dart';
 import 'package:smart_attendance_app/core/utils/attendance_utils.dart';
 
-/// Main Dashboard/Home page showing overall attendance, analytics, and extra lectures
+/// Main Dashboard/Home page showing overall attendance and today's classes
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
@@ -23,21 +25,17 @@ class DashboardPage extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
 
-        return SingleChildScrollView(
-          child: Column(
-            children: [
-              // Overall attendance card
-              _buildOverallCard(context, controller),
+        return Column(
+          children: [
+            // Fixed analytics header with Overall card
+            _buildOverallCard(context, controller),
 
-              // Analytics section
-              _buildAnalyticsSection(context, controller),
+            // Extra Lecture button
+            _buildExtraLectureButton(context, controller),
 
-              // Extra lectures section
-              _buildExtraLecturesSection(context, controller),
-
-              const SizedBox(height: 20),
-            ],
-          ),
+            // Today's classes section (vertical scrollable list) - MAIN CONTENT
+            Expanded(child: _buildTodayClassesSection(context, controller)),
+          ],
         );
       }),
     );
@@ -143,432 +141,215 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  /// Analytics section with filters and stats
-  Widget _buildAnalyticsSection(
+  /// Extra Lecture button
+  Widget _buildExtraLectureButton(
     BuildContext context,
     DashboardController controller,
   ) {
-    final theme = Theme.of(context);
-
     return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Header with "Analytics" and "Add Extra Lecture" button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Analytics',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              ElevatedButton.icon(
-                onPressed: () => _showAddExtraLectureModal(context, controller),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Extra Lecture'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
-              ),
-            ],
+          Text(
+            "Today's Classes",
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          const SizedBox(height: 12),
-
-          // Analytics filter tabs
-          _buildAnalyticsFilterTabs(context, controller),
-          const SizedBox(height: 16),
-
-          // Analytics stats cards
-          Obx(
-            () {
-              final analytics = controller.getAnalyticsData();
-              return Column(
-                children: [
-                  // Summary row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildAnalyticsStat(
-                          context,
-                          '${analytics['totalClasses']}',
-                          'Classes',
-                          Colors.blue,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildAnalyticsStat(
-                          context,
-                          '${analytics['totalPresent']}',
-                          'Present',
-                          AppTheme.safeColor,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildAnalyticsStat(
-                          context,
-                          '${analytics['totalAbsent']}',
-                          'Absent',
-                          AppTheme.criticalColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Overall percentage card
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          'Overall Attendance',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${(analytics['overallPercentage'] as double).toStringAsFixed(1)}%',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Per-subject breakdown
-                  if ((analytics['subjectStats'] as Map).isNotEmpty) ...[
-                    Text(
-                      'By Subject',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ...(analytics['subjectStats'] as Map).entries.map(
-                          (entry) => _buildSubjectAnalyticsTile(
-                            context,
-                            entry.key as String,
-                            entry.value as Map<String, int>,
-                          ),
-                        ),
-                  ],
-                ],
-              );
-            },
+          ElevatedButton.icon(
+            onPressed: () => _showAddExtraLectureModal(context, controller),
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Extra Lecture'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAnalyticsFilterTabs(
+  /// Today's classes section - vertical scrollable list with inline attendance marking
+  Widget _buildTodayClassesSection(
     BuildContext context,
     DashboardController controller,
   ) {
-    return Obx(
-      () => Row(
-        children: [
-          Expanded(
-            child: _buildFilterTab(
-              context,
-              'Weekly',
-              controller.analyticsFilter.value == 'weekly',
-              () => controller.setAnalyticsFilterWeekly(),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildFilterTab(
-              context,
-              'Monthly',
-              controller.analyticsFilter.value == 'monthly',
-              () => controller.setAnalyticsFilterMonthly(),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildFilterTab(
-              context,
-              'Custom',
-              controller.analyticsFilter.value == 'from-to',
-              () => _showDateRangePicker(context, controller),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterTab(
-    BuildContext context,
-    String label,
-    bool isSelected,
-    VoidCallback onTap,
-  ) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? theme.colorScheme.primary
-              : theme.colorScheme.primary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: isSelected ? Colors.white : theme.colorScheme.primary,
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAnalyticsStat(
-    BuildContext context,
-    String value,
-    String label,
-    Color color,
-  ) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSubjectAnalyticsTile(
-    BuildContext context,
-    String subjectName,
-    Map<String, int> stats,
-  ) {
-    final theme = Theme.of(context);
-    final classes = stats['classes'] ?? 0;
-    final present = stats['present'] ?? 0;
-    final percentage = classes > 0 ? (present / classes * 100) : 0.0;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: theme.dividerColor,
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Obx(() {
+      if (controller.todayClasses.isEmpty) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  subjectName,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                Icon(
+                  Icons.event_available,
+                  color: AppTheme.safeColor,
+                  size: 48,
                 ),
-                Text(
-                  '$present/$classes',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    'No classes scheduled today!',
+                    style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: _getPercentageColor(percentage).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              '${percentage.toStringAsFixed(1)}%',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: _getPercentageColor(percentage),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+        );
+      }
+
+      return ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        itemCount: controller.todayClasses.length,
+        itemBuilder: (context, index) {
+          final entry = controller.todayClasses[index];
+          return _buildTodayClassTile(context, entry, controller);
+        },
+      );
+    });
   }
 
-  Color _getPercentageColor(double percentage) {
-    if (percentage >= 75) return AppTheme.safeColor;
-    if (percentage >= 50) return AppTheme.warningColor;
-    return AppTheme.criticalColor;
-  }
-
-  /// Extra lectures section
-  Widget _buildExtraLecturesSection(
+  /// Build a single class tile with inline attendance buttons
+  Widget _buildTodayClassTile(
     BuildContext context,
+    TimetableEntry entry,
     DashboardController controller,
   ) {
-    final theme = Theme.of(context);
+    final subjectName = controller.getSubjectName(entry.subjectId);
 
     return Obx(
       () {
-        if (controller.extraLectures.isEmpty) {
-          return const SizedBox.shrink();
-        }
+        final currentStatus = controller.getTodayStatus(entry.id);
+        final isMarking = controller.markingInProgress.value == entry.id;
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Extra Lectures (Today)',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+        return TodayClassTile(
+          subjectName: subjectName,
+          classType: entry.type,
+          startTime: entry.startTime,
+          endTime: entry.endTime,
+          currentStatus: currentStatus,
+          isMarking: isMarking,
+          onPresent: () {
+            controller.markAttendance(
+              entry.subjectId,
+              'present',
+              timetableEntryId: entry.id,
+            );
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Marked as Present'),
+                duration: Duration(seconds: 2),
               ),
-              const SizedBox(height: 12),
-              ...controller.extraLectures.map(
-                (record) => _buildExtraLectureTile(context, controller, record),
+            );
+          },
+          onAbsent: () {
+            controller.markAttendance(
+              entry.subjectId,
+              'absent',
+              timetableEntryId: entry.id,
+            );
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Marked as Absent'),
+                duration: Duration(seconds: 2),
               ),
-            ],
-          ),
+            );
+          },
+          onCancelled: () {
+            controller.markAttendance(
+              entry.subjectId,
+              'cancelled',
+              timetableEntryId: entry.id,
+            );
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Lecture Cancelled'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          },
+          onChangeStatus: () {
+            _showChangeStatusDialog(context, controller, entry);
+          },
         );
       },
     );
   }
 
-  Widget _buildExtraLectureTile(
+  /// Show dialog to change attendance status
+  void _showChangeStatusDialog(
     BuildContext context,
     DashboardController controller,
-    dynamic record,
+    TimetableEntry entry,
   ) {
-    final theme = Theme.of(context);
-    final subjectName = controller.getSubjectName(record.subjectId);
+    final currentStatus = controller.getTodayStatus(entry.id);
 
-    Color statusColor;
-    IconData statusIcon;
-    String statusText;
-
-    switch (record.status) {
-      case 'present':
-        statusColor = AppTheme.safeColor;
-        statusIcon = Icons.check_circle;
-        statusText = 'Present';
-        break;
-      case 'absent':
-        statusColor = AppTheme.criticalColor;
-        statusIcon = Icons.cancel;
-        statusText = 'Absent';
-        break;
-      case 'cancelled':
-        statusColor = AppTheme.warningColor;
-        statusIcon = Icons.event_busy;
-        statusText = 'Cancelled';
-        break;
-      default:
-        statusColor = Colors.grey;
-        statusIcon = Icons.help_outline;
-        statusText = 'Unknown';
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: statusColor.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(statusIcon, color: statusColor, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  subjectName,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Change Attendance Status'),
+        content: const Text('Select new attendance status:'),
+        actions: [
+          if (currentStatus != 'present')
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                controller.markAttendance(
+                  entry.subjectId,
+                  'present',
+                  timetableEntryId: entry.id,
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Updated to Present'),
+                    duration: Duration(seconds: 2),
                   ),
-                ),
-                Text(
-                  statusText,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: statusColor,
-                    fontWeight: FontWeight.w500,
+                );
+              },
+              child: const Text('Present'),
+            ),
+          if (currentStatus != 'absent')
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                controller.markAttendance(
+                  entry.subjectId,
+                  'absent',
+                  timetableEntryId: entry.id,
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Updated to Absent'),
+                    duration: Duration(seconds: 2),
                   ),
-                ),
-              ],
+                );
+              },
+              child: const Text('Absent'),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.edit, size: 20),
-            onPressed: () =>
-                _showEditExtraLectureModal(context, controller, record),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete, size: 20),
-            color: AppTheme.criticalColor,
-            onPressed: () => _showDeleteConfirmation(
-              context,
-              () => controller.deleteExtraLecture(record.id),
+          if (currentStatus != 'cancelled')
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                controller.markAttendance(
+                  entry.subjectId,
+                  'cancelled',
+                  timetableEntryId: entry.id,
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Updated to Cancelled'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: const Text('Lecture Cancelled'),
             ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
         ],
       ),
@@ -712,210 +493,6 @@ class DashboardPage extends StatelessWidget {
                   }
                 : null,
             child: const Text('Add'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Show modal to edit extra lecture
-  void _showEditExtraLectureModal(
-    BuildContext context,
-    DashboardController controller,
-    dynamic record,
-  ) {
-    final theme = Theme.of(context);
-    String? selectedSubjectId = record.subjectId;
-    DateTime selectedDate = AttendanceUtils.parseDate(record.date);
-    String? selectedStatus = record.status;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Extra Lecture'),
-        content: StatefulBuilder(
-          builder: (context, setState) {
-            return SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Subject dropdown
-                  Text(
-                    'Subject',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Obx(
-                    () => DropdownButton<String>(
-                      isExpanded: true,
-                      value: selectedSubjectId,
-                      items: controller.subjects.map((s) {
-                        return DropdownMenuItem(
-                          value: s.id,
-                          child: Text(s.name),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() => selectedSubjectId = value);
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Date picker
-                  Text(
-                    'Date',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: selectedDate,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2100),
-                      );
-                      if (date != null) {
-                        setState(() => selectedDate = date);
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        AttendanceUtils.formatDateForDisplay(selectedDate),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Status dropdown
-                  Text(
-                    'Status',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButton<String>(
-                    isExpanded: true,
-                    value: selectedStatus,
-                    items: const [
-                      DropdownMenuItem(value: 'present', child: Text('Present')),
-                      DropdownMenuItem(value: 'absent', child: Text('Absent')),
-                      DropdownMenuItem(
-                        value: 'cancelled',
-                        child: Text('Cancelled'),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setState(() => selectedStatus = value);
-                    },
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: selectedSubjectId != null && selectedStatus != null
-                ? () {
-                    final dateStr =
-                        AttendanceUtils.formatDateForStorage(selectedDate);
-                    controller.updateExtraLecture(
-                      record.id,
-                      selectedSubjectId!,
-                      dateStr,
-                      selectedStatus!,
-                    );
-                    Navigator.pop(context);
-                    Get.snackbar(
-                      'Success',
-                      'Extra lecture updated!',
-                      snackPosition: SnackPosition.BOTTOM,
-                      duration: const Duration(seconds: 2),
-                    );
-                  }
-                : null,
-            child: const Text('Update'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Show date range picker for custom analytics
-  void _showDateRangePicker(
-    BuildContext context,
-    DashboardController controller,
-  ) async {
-    final range = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-      initialDateRange: controller.fromDate.value != null &&
-              controller.toDate.value != null
-          ? DateTimeRange(
-              start: controller.fromDate.value!,
-              end: controller.toDate.value!,
-            )
-          : null,
-    );
-
-    if (range != null) {
-      controller.setAnalyticsFilterFromTo(range.start, range.end);
-    }
-  }
-
-  /// Show delete confirmation dialog
-  void _showDeleteConfirmation(
-    BuildContext context,
-    VoidCallback onConfirm,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Extra Lecture?'),
-        content: const Text(
-          'This will remove the extra lecture record and update attendance statistics.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              onConfirm();
-              Navigator.pop(context);
-              Get.snackbar(
-                'Deleted',
-                'Extra lecture removed',
-                snackPosition: SnackPosition.BOTTOM,
-                duration: const Duration(seconds: 2),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.criticalColor,
-            ),
-            child: const Text('Delete'),
           ),
         ],
       ),
