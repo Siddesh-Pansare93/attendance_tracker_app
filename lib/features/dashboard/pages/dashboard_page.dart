@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:smart_attendance_app/core/routes/app_routes.dart';
 import 'package:smart_attendance_app/core/theme/app_theme.dart';
-import 'package:smart_attendance_app/core/utils/attendance_utils.dart';
 import 'package:smart_attendance_app/common/widgets/attendance_indicator.dart';
-import 'package:smart_attendance_app/common/widgets/empty_state.dart';
+import 'package:smart_attendance_app/common/widgets/today_class_tile.dart';
 import 'package:smart_attendance_app/features/dashboard/controller/dashboard_controller.dart';
-import 'package:smart_attendance_app/features/attendance/data/model/subject_model.dart';
 import 'package:smart_attendance_app/features/timetable/data/model/timetable_entry_model.dart';
 
 /// Main Dashboard/Home page showing overall attendance and subjects
@@ -32,16 +29,8 @@ class DashboardPage extends StatelessWidget {
             // Fixed analytics header
             _buildOverallCard(context, controller),
 
-            // Fixed Today's classes section
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: _buildTodaySection(context, controller),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Subjects section with scrollable list
-            Expanded(child: _buildSubjectsSection(context, controller)),
+            // Today's classes section (vertical scrollable list) - MAIN CONTENT
+            Expanded(child: _buildTodayClassesSection(context, controller)),
           ],
         );
       }),
@@ -148,151 +137,8 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  /// Today's classes section
-  Widget _buildTodaySection(
-    BuildContext context,
-    DashboardController controller,
-  ) {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              "Today's Classes",
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            TextButton(
-              onPressed: () => Get.toNamed(AppRoutes.today),
-              child: const Text('Mark Attendance →'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        Obx(() {
-          if (controller.todayClasses.isEmpty) {
-            return Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.event_available,
-                      color: AppTheme.safeColor,
-                      size: 32,
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      'No classes scheduled today!',
-                      style: theme.textTheme.bodyLarge,
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          return SizedBox(
-            height: 100,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: controller.todayClasses.length,
-              itemBuilder: (context, index) {
-                final entry = controller.todayClasses[index];
-                return _buildTodayClassCard(context, entry, controller);
-              },
-            ),
-          );
-        }),
-      ],
-    );
-  }
-
-  Widget _buildTodayClassCard(
-    BuildContext context,
-    TimetableEntry entry,
-    DashboardController controller,
-  ) {
-    final theme = Theme.of(context);
-    final subjectName = controller.getSubjectName(entry.subjectId);
-    final isMarked = controller.isAttendanceMarkedToday(entry.subjectId);
-
-    return Container(
-      width: 160,
-      margin: const EdgeInsets.only(right: 12),
-      child: Card(
-        child: InkWell(
-          onTap: () => Get.toNamed(AppRoutes.today),
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        subjectName,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (isMarked)
-                      const Icon(
-                        Icons.check_circle,
-                        color: AppTheme.safeColor,
-                        size: 18,
-                      ),
-                  ],
-                ),
-                // Text(
-                //   AttendanceUtils.formatTimeRange(
-                //     entry.startTime,
-                //     entry.endTime,
-                //   ),
-                //   style: theme.textTheme.bodySmall?.copyWith(
-                //     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                //   ),
-                // ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    entry.type,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Subjects list section
-  Widget _buildSubjectsSection(
+  /// Today's classes section - vertical scrollable list with inline attendance marking
+  Widget _buildTodayClassesSection(
     BuildContext context,
     DashboardController controller,
   ) {
@@ -302,40 +148,48 @@ class DashboardPage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Your Subjects',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              IconButton(
-                onPressed: () => Get.toNamed(AppRoutes.addSubject),
-                icon: const Icon(Icons.add_circle_outline),
-              ),
-            ],
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: Text(
+            "Today's Classes",
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
-
+        const SizedBox(height: 12),
         Expanded(
           child: Obx(() {
-            if (controller.subjects.isEmpty) {
+            if (controller.todayClasses.isEmpty) {
               return Center(
-                child: NoSubjectsEmpty(
-                  onAdd: () => Get.toNamed(AppRoutes.addSubject),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.event_available,
+                        color: AppTheme.safeColor,
+                        size: 48,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          'No classes scheduled today!',
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             }
 
             return ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: controller.subjects.length,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              itemCount: controller.todayClasses.length,
               itemBuilder: (context, index) {
-                final subject = controller.subjects[index];
-                return _buildSubjectCard(context, subject, controller);
+                final entry = controller.todayClasses[index];
+                return _buildTodayClassTile(context, entry, controller);
               },
             );
           }),
@@ -344,80 +198,146 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSubjectCard(
+  /// Build a single class tile with inline attendance buttons
+  Widget _buildTodayClassTile(
     BuildContext context,
-    Subject subject,
+    TimetableEntry entry,
     DashboardController controller,
   ) {
-    final theme = Theme.of(context);
-    final percentage = subject.attendancePercentage;
-    final statusMessage = AttendanceUtils.getStatusMessage(
-      subject.attendedClasses,
-      subject.totalClasses,
-      controller.threshold.value,
+    final subjectName = controller.getSubjectName(entry.subjectId);
+
+    return Obx(
+      () {
+        final currentStatus = controller.getTodayStatus(entry.id);
+        final isMarking = controller.markingInProgress.value == entry.id;
+
+        return TodayClassTile(
+          subjectName: subjectName,
+          classType: entry.type,
+          startTime: entry.startTime,
+          endTime: entry.endTime,
+          currentStatus: currentStatus,
+          isMarking: isMarking,
+          onPresent: () {
+            controller.markAttendance(
+              entry.subjectId,
+              'present',
+              timetableEntryId: entry.id,
+            );
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Marked as Present'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          },
+          onAbsent: () {
+            controller.markAttendance(
+              entry.subjectId,
+              'absent',
+              timetableEntryId: entry.id,
+            );
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Marked as Absent'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          },
+          onCancelled: () {
+            controller.markAttendance(
+              entry.subjectId,
+              'cancelled',
+              timetableEntryId: entry.id,
+            );
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Lecture Cancelled'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          },
+          onChangeStatus: () {
+            _showChangeStatusDialog(context, controller, entry);
+          },
+        );
+      },
     );
+  }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: () => Get.toNamed('/subject/${subject.id}'),
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              // Percentage indicator
-              AttendanceIndicator(
-                percentage: percentage,
-                threshold: controller.threshold.value,
-                size: 56,
-                showLabel: false,
-              ),
-              const SizedBox(width: 16),
+  /// Show dialog to change attendance status
+  void _showChangeStatusDialog(
+    BuildContext context,
+    DashboardController controller,
+    TimetableEntry entry,
+  ) {
+    final currentStatus = controller.getTodayStatus(entry.id);
 
-              // Subject info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      subject.name,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${subject.attendedClasses} / ${subject.totalClasses} classes',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.6,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      statusMessage,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppTheme.getStatusColor(
-                          percentage,
-                          controller.threshold.value,
-                        ),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Status badge
-              StatusBadge(
-                percentage: percentage,
-                threshold: controller.threshold.value,
-              ),
-            ],
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Change Attendance Status'),
+        content: const Text('Select new attendance status:'),
+        actions: [
+          if (currentStatus != 'present')
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                controller.markAttendance(
+                  entry.subjectId,
+                  'present',
+                  timetableEntryId: entry.id,
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Updated to Present'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: const Text('Present'),
+            ),
+          if (currentStatus != 'absent')
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                controller.markAttendance(
+                  entry.subjectId,
+                  'absent',
+                  timetableEntryId: entry.id,
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Updated to Absent'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: const Text('Absent'),
+            ),
+          if (currentStatus != 'cancelled')
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                controller.markAttendance(
+                  entry.subjectId,
+                  'cancelled',
+                  timetableEntryId: entry.id,
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Updated to Cancelled'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: const Text('Lecture Cancelled'),
+            ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
-        ),
+        ],
       ),
     );
   }

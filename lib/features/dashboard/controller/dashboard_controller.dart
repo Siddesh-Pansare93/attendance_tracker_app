@@ -1,10 +1,12 @@
 import 'package:get/get.dart';
+import 'package:uuid/uuid.dart';
 import 'package:smart_attendance_app/core/repositories/subject_repository.dart';
 import 'package:smart_attendance_app/core/repositories/timetable_repository.dart';
 import 'package:smart_attendance_app/core/repositories/attendance_repository.dart';
 import 'package:smart_attendance_app/core/repositories/settings_repository.dart';
 import 'package:smart_attendance_app/core/utils/attendance_utils.dart';
 import 'package:smart_attendance_app/features/attendance/data/model/subject_model.dart';
+import 'package:smart_attendance_app/features/attendance/data/model/attendance_record_model.dart';
 import 'package:smart_attendance_app/features/timetable/data/model/timetable_entry_model.dart';
 
 /// Controller for the Dashboard/Home screen
@@ -15,14 +17,19 @@ class DashboardController extends GetxController {
   // Dependencies injected via Get.find() - relies on abstractions
   SubjectRepository get _subjectRepo => Get.find<SubjectRepository>();
   TimetableRepository get _timetableRepo => Get.find<TimetableRepository>();
+  AttendanceRepository get _attendanceRepo => Get.find<AttendanceRepository>();
   SettingsRepository get _settingsRepo => Get.find<SettingsRepository>();
+
+  final _uuid = const Uuid();
 
   // Observable state
   final subjects = <Subject>[].obs;
   final todayClasses = <TimetableEntry>[].obs;
+  final todayRecords = <String, AttendanceRecord>{}.obs; // entryId -> record
   final isLoading = true.obs;
   final overallPercentage = 0.0.obs;
   final threshold = 75.0.obs;
+  final markingInProgress = Rxn<String>(); // entryId being marked
 
   @override
   void onInit() {
@@ -40,6 +47,15 @@ class DashboardController extends GetxController {
       // Load today's classes from repository
       final today = AttendanceUtils.getCurrentDayOfWeek();
       todayClasses.value = _timetableRepo.getByDay(today);
+
+      // Load today's attendance records
+      final todayStr = AttendanceUtils.getTodayString();
+      final records = _attendanceRepo.getByDate(todayStr);
+      todayRecords.clear();
+      for (final record in records) {
+        final key = record.timetableEntryId ?? record.subjectId;
+        todayRecords[key] = record;
+      }
 
       // Load threshold setting from repository
       threshold.value = _settingsRepo.getAttendanceThreshold();
@@ -104,5 +120,84 @@ class DashboardController extends GetxController {
       (a, b) => a.attendancePercentage.compareTo(b.attendancePercentage),
     );
     return sorted;
+  }
+
+  /// Check if attendance is marked for a specific timetable entry today
+  bool isMarkedToday(String entryId) {
+    return todayRecords.containsKey(entryId);
+  }
+
+  /// Get attendance status for a specific timetable entry today
+  String? getTodayStatus(String entryId) {
+    return todayRecords[entryId]?.status;
+  }
+
+  /// Mark attendance for a specific timetable entry today
+  /// Status can be: 'present', 'absent', or 'cancelled'
+  Future<void> markAttendance(
+    String subjectId,
+    String status, {
+    String? timetableEntryId,
+  }) async {
+    final entryId = timetableEntryId ?? subjectId;
+    
+    try {
+      markingInProgress.value = entryId;
+
+      final todayStr = AttendanceUtils.getTodayString();
+      final subject = _subjectRepo.getById(subjectId);
+      if (subject == null) return;
+
+      final existingRecord = todayRecords[entryId];
+
+      if (existingRecord != null) {
+        // Update existing record
+        final oldStatus = existingRecord.status;
+        existingRecord.status = status;
+        await _attendanceRepo.save(existingRecord);
+
+        // Update subject counts based on status changes
+        if (oldStatus != status) {
+          if (oldStatus == 'present') {
+            subject.attendedClasses -= 1;
+          }
+          if (oldStatus != 'cancelled') {
+            subject.totalClasses -= 1;
+          }
+          if (status == 'present') {
+            subject.attendedClasses += 1;
+          }
+          if (status != 'cancelled') {
+            subject.totalClasses += 1;
+          }
+          await _subjectRepo.save(subject);
+        }
+      } else {
+        // Create new record
+        final record = AttendanceRecord(
+          id: _uuid.v4(),
+          subjectId: subjectId,
+          date: todayStr,
+          status: status,
+          timetableEntryId: timetableEntryId,
+        );
+        await _attendanceRepo.save(record);
+        todayRecords[entryId] = record;
+
+        // Update subject counts (cancelled doesn't count towards total)
+        if (status != 'cancelled') {
+          subject.totalClasses += 1;
+          if (status == 'present') {
+            subject.attendedClasses += 1;
+          }
+          await _subjectRepo.save(subject);
+        }
+      }
+
+      // Refresh data
+      await loadData();
+    } finally {
+      markingInProgress.value = null;
+    }
   }
 }

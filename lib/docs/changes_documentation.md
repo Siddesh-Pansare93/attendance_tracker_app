@@ -81,7 +81,7 @@ class AttendanceController extends GetxController {
   SubjectRepository get _subjectRepo => Get.find<SubjectRepository>();
   
   Future<void> loadData() async {
-    subjects.value = _subjectRepo.getAll();  // ✅ Uses interface
+    subjects.value = _su  bjectRepo.getAll();  // ✅ Uses interface
   }
 }
 ```
