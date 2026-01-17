@@ -42,11 +42,23 @@ class CalendarController extends GetxController {
   /// Build map of records grouped by date
   void _buildRecordsByDate() {
     recordsByDate.clear();
+    final grouped = <String, Map<String, AttendanceRecord>>{};
+
     for (final record in allRecords) {
-      if (!recordsByDate.containsKey(record.date)) {
-        recordsByDate[record.date] = [];
+      final dateKey = record.date;
+      grouped.putIfAbsent(dateKey, () => {});
+      final dateMap = grouped[dateKey]!;
+
+      if (record.timetableEntryId == null) {
+        dateMap.putIfAbsent(record.subjectId, () => record);
+      } else {
+        dateMap.remove(record.subjectId);
+        dateMap[record.timetableEntryId!] = record;
       }
-      recordsByDate[record.date]!.add(record);
+    }
+
+    for (final entry in grouped.entries) {
+      recordsByDate[entry.key] = entry.value.values.toList();
     }
   }
 

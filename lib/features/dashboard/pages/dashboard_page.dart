@@ -427,7 +427,7 @@ class DashboardPage extends StatelessWidget {
                   flex: 2,
                   child: _buildActionButton(
                     context,
-                    'Cancelled',
+                    'Cancel',
                     Icons.event_busy_outlined,
                     AppTheme.warningColor,
                     isMarking,
@@ -519,6 +519,8 @@ class DashboardPage extends StatelessWidget {
       icon: Icon(icon, size: 16),
       label: Text(
         label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
       ),
       style: OutlinedButton.styleFrom(

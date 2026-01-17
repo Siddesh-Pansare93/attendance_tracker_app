@@ -305,18 +305,20 @@ class TodayAttendancePage extends StatelessWidget {
       children: [
         Text(
           'Analytics',
-          style:
-              (isDark
-                      ? theme.textTheme.titleMedium
-                      : theme.textTheme.titleMedium)
-                  ?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: isDark
-                        ? AppTheme.darkTextPrimary
-                        : AppTheme.textPrimary,
-                  ),
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
+          ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
+        Text(
+          'Your attendance insights for the selected period',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: isDark ? AppTheme.darkTextMuted : AppTheme.textMuted,
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 20),
 
         // Filter tabs
         _buildAnalyticsFilterTabs(context, dashboardController),
@@ -325,7 +327,14 @@ class TodayAttendancePage extends StatelessWidget {
         // Analytics stats
         Obx(() {
           final analytics = dashboardController.getAnalyticsData();
+          final overallPercentage = analytics['overallPercentage'] as double;
+          final overallColor = AppTheme.getStatusColor(
+            overallPercentage,
+            dashboardController.threshold.value,
+          );
+
           return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Summary row with 3 cards
               Row(
@@ -360,91 +369,85 @@ class TodayAttendancePage extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // Overall percentage card - Minimalist with solid color
+              // Overall percentage card
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor,
+                  color: isDark
+                      ? AppTheme.darkSurfaceDefault
+                      : AppTheme.surfaceDefault,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark
+                        ? AppTheme.darkBorderSubtle
+                        : AppTheme.borderSubtle,
+                  ),
                 ),
                 child: Row(
                   children: [
                     // Circular progress indicator
                     SizedBox(
-                      width: 100,
-                      height: 100,
+                      width: 90,
+                      height: 90,
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
                           CircularProgressIndicator(
-                            value:
-                                (analytics['overallPercentage'] as double) /
-                                100,
-                            strokeWidth: 5,
-                            backgroundColor: Colors.white.withValues(
-                              alpha: 0.2,
-                            ),
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              Colors.white,
+                            value: overallPercentage / 100,
+                            strokeWidth: 6,
+                            backgroundColor: isDark
+                                ? AppTheme.darkBorderSubtle
+                                : AppTheme.borderSubtle,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              overallColor,
                             ),
                           ),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                '${(analytics['overallPercentage'] as double).toStringAsFixed(0)}%',
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                            ],
+                          Text(
+                            '${overallPercentage.toStringAsFixed(0)}%',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: overallColor,
+                            ),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(width: 20),
-                    // Text info
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(
-                                  Icons.analytics,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              const Expanded(
-                                child: Text(
-                                  'Overall Attendance',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          Text(
+                            'Overall Attendance',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? AppTheme.darkTextPrimary
+                                  : AppTheme.textPrimary,
+                            ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           Text(
                             'Based on selected period',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              fontSize: 13,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: isDark
+                                  ? AppTheme.darkTextMuted
+                                  : AppTheme.textMuted,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              minHeight: 6,
+                              value: overallPercentage / 100,
+                              backgroundColor: isDark
+                                  ? AppTheme.darkBorderSubtle
+                                  : AppTheme.borderSubtle,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                overallColor,
+                              ),
                             ),
                           ),
                         ],
@@ -459,18 +462,12 @@ class TodayAttendancePage extends StatelessWidget {
               if ((analytics['subjectStats'] as Map).isNotEmpty) ...[
                 Text(
                   'By Subject',
-                  style:
-                      (isDark
-                              ? theme.textTheme.bodySmall
-                              : theme.textTheme.bodySmall)
-                          ?.copyWith(
-                            color: isDark
-                                ? AppTheme.darkTextMuted
-                                : AppTheme.textMuted,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                            letterSpacing: 0.5,
-                          ),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: isDark ? AppTheme.darkTextMuted : AppTheme.textMuted,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    letterSpacing: 0.5,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 ...(analytics['subjectStats'] as Map).entries.map(
@@ -639,18 +636,26 @@ class TodayAttendancePage extends StatelessWidget {
         ),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(height: 10),
           Text(
             value,
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: color,
+              color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             label,
             style: theme.textTheme.bodySmall?.copyWith(
